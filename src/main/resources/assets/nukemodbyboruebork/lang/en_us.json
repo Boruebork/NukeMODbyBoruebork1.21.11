@@ -1,0 +1,13 @@
+{
+  "itemGroup.nukemodbyboruebork": "Example Mod Tab",
+  "block.nukemodbyboruebork.example_block": "Example Block",
+  "item.nukemodbyboruebork.example_item": "Example Item",
+
+  "nukemodbyboruebork.configuration.title": "Nuke Mod by Boruebork Configs",
+  "nukemodbyboruebork.configuration.section.nukemodbyboruebork.common.toml": "Nuke Mod by Boruebork Configs",
+  "nukemodbyboruebork.configuration.section.nukemodbyboruebork.common.toml.title": "Nuke Mod by Boruebork Configs",
+  "nukemodbyboruebork.configuration.items": "Item List",
+  "nukemodbyboruebork.configuration.logDirtBlock": "Log Dirt Block",
+  "nukemodbyboruebork.configuration.magicNumberIntroduction": "Magic Number Text",
+  "nukemodbyboruebork.configuration.magicNumber": "Magic Number"
+}
