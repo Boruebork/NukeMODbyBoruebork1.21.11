@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "justamod:rare_dust",
+      "count": 1
+    },
+    "title": "Rare Stuff",
+    "description": "Technological breakthrough",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "justamod:justamod/root",
+  "criteria": {
+    "get_rare_dust": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "justamod:rare_dust"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "get_rare_dust"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

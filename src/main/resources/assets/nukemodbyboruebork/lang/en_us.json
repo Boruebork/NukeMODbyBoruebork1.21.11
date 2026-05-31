@@ -1,13 +1,44 @@
 {
-  "itemGroup.nukemodbyboruebork": "Example Mod Tab",
-  "block.nukemodbyboruebork.example_block": "Example Block",
-  "item.nukemodbyboruebork.example_item": "Example Item",
+  "item.nukemodbyboruebork.titanium": "Titanium Ingot",
+  "item.nukemodbyboruebork.raw_titanium": "Raw Titamium",
+  "item.nukemodbyboruebork.neptunium": "Neptunium Ingot",
+  "item.nukemodbyboruebork.diamond_rod": "Diamond Rod",
+  "item.nukemodbyboruebork.tungsten_ingot": "Tungsten Ingot",
+  "item.nukemodbyboruebork.netherite_rod": "Titanium Rod",
+  "item.nukemodbyboruebork.raw_tungsten": "Raw Tungsten",
+  "item.nukemodbyboruebork.rare_dust": "Rare Dust",
+  "item.nukemodbyboruebork.dirty_rare_dust": "Dirty Rare Dust",
+  "item.nukemodbyboruebork.uranium_dust": "Uranium Dust",
+  "item.nukemodbyboruebork.rare_colb": "Rare Colb",
+  "item.nukemodbyboruebork.electronics": "Electronics",
+  "item.nukemodbyboruebork.heavy_water": "Heavy Water",
+  "item.nukemodbyboruebork.modern_alloy": "Modern Alloy",
+  "item.nukemodbyboruebork.enriched_uranium_dust": "Enriched Uranium Dust",
+  "item.nukemodbyboruebork.nuclear_warhead": "Nuclear Warhead",
 
-  "nukemodbyboruebork.configuration.title": "Nuke Mod by Boruebork Configs",
-  "nukemodbyboruebork.configuration.section.nukemodbyboruebork.common.toml": "Nuke Mod by Boruebork Configs",
-  "nukemodbyboruebork.configuration.section.nukemodbyboruebork.common.toml.title": "Nuke Mod by Boruebork Configs",
-  "nukemodbyboruebork.configuration.items": "Item List",
-  "nukemodbyboruebork.configuration.logDirtBlock": "Log Dirt Block",
-  "nukemodbyboruebork.configuration.magicNumberIntroduction": "Magic Number Text",
-  "nukemodbyboruebork.configuration.magicNumber": "Magic Number"
+
+  "block.nukemodbyboruebork.titanium_block": "Titanium Block",
+  "block.nukemodbyboruebork.titanium_ore": "Titanium Ore",
+  "block.nukemodbyboruebork.tungsten_ore": "Tungsten Ore",
+  "block.nukemodbyboruebork.deepslate_titanium_ore": "Deepslate Titanium Ore",
+  "block.nukemodbyboruebork.deepslate_tungsten_ore": "Deepslate Tungsten Ore",
+  "block.nukemodbyboruebork.deepslate_uranium_ore": "Deepslate Uranium Ore",
+  "block.nukemodbyboruebork.uranium_ore": "Uranium Ore",
+  "block.nukemodbyboruebork.rare_ore": "Rare Ore",
+  "block.nukemodbyboruebork.enricher": "Uranium Enricher",
+  "block.nukemodbyboruebork.deepslate_rare_ore": "Deepslate Rare Ore",
+  "block.nukemodbyboruebork.enriched_uranium_block": "Enriched uranium block",
+  "block.nukemodbyboruebork.modern_alloy_block": "Modern alloy block",
+  "block.nukemodbyboruebork.uranium_block": "Uranium block",
+  "block.nukemodbyboruebork.rare_dust_block": "Rare dust block",
+
+  "creativetab.nukemodbyboruebork.just_a_tab": "Just a MOD Items",
+  "creativetab.nukemodbyboruebork.just_a_bloc_tab": "Just a MOD BLocks",
+  "creativetab.nukemodbyboruebork.machine_tab": "Machines",
+
+
+  "advancements.justamod.root.title": "Just a MOD",
+  "advancements.justamod.root.description": "Or is it?",
+
+  "entity.justamod.nuke": "Nuke"
 }

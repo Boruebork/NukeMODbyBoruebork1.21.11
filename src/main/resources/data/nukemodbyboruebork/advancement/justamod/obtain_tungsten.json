@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "id": "justamod:tungsten_ingot",
+      "count": 1
+    },
+    "title": "Light as a plane",
+    "description": "Can a metal be so light?",
+    "frame": "task",
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "justamod:justamod/root",
+  "criteria": {
+    "get_tungsten": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "justamod:tungsten_ingot"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "get_tungsten"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

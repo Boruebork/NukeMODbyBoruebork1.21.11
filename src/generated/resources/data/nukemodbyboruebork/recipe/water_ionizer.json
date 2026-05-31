@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "O": "nukemodbyboruebork:ionizer",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "IRI",
+    "IOI",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "nukemodbyboruebork:water_ionizer"
+  }
+}

@@ -1,0 +1,4 @@
+// 1.21.11	2025-12-26T22:02:12.4022242	Tags for minecraft:block mod id nukemodbyboruebork
+10b8d2d17a420af8137b13b88c36a1d1fc38d8ef data/minecraft/tags/block/mineable/pickaxe.json
+deb92eb10ecc98068787103e925c5663caa3647d data/minecraft/tags/block/needs_diamond_tool.json
+00f25a5d789514453c5a2f33b2f088c0748ae66c data/minecraft/tags/block/needs_iron_tool.json

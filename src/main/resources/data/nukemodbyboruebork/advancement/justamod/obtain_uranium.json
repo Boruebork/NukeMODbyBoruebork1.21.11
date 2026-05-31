@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "justamod:uranium_dust",
+      "count": 1
+    },
+    "title": "Where can it lead?",
+    "description": "Obtain some Uranium dust!",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "justamod:justamod/root",
+  "criteria": {
+    "obtain_uranium": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "justamod:uranium_dust"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obtain_uranium"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

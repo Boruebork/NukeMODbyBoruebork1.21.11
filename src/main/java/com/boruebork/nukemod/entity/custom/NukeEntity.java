@@ -1,6 +1,10 @@
 package com.boruebork.nukemod.entity.custom;
 
 import com.boruebork.nukemod.Config;
+import com.boruebork.nukemod.explosion.ExpandingExplosion;
+import com.boruebork.nukemod.explosion.NuclearExplosion;
+import com.boruebork.nukemod.nuke.ExplosionHandler;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -127,12 +131,18 @@ public class NukeEntity extends Entity {
     public void tick() {
         super.tick();
         if (!level.isClientSide() && this.goodToGo){
+            this.move(MoverType.SELF, new Vec3(this.xSpeed, this.ySpeed, this.zSpeed));
             if (this.verticalCollision || this.horizontalCollision){
-                this.level.explode(this, this.getX(), this.getY(), this.getZ(), 16.0f, Level.ExplosionInteraction.TNT);
+                //this.level.explode(this, this.getX(), this.getY(), this.getZ(), 52.0f, Level.ExplosionInteraction.TNT);
+                NuclearExplosion.createExplosion((ServerLevel) this.level,
+                        new BlockPos(
+                                (int) this.getX(),
+                                (int) this.getY(),
+                                (int) this.getZ())
+                );
                 this.discard();
             }
-            this.move(MoverType.SELF, new Vec3(this.xSpeed, this.ySpeed, this.zSpeed));
-            this.yRot -= Config.GRAVITY;
+            this.ySpeed -= Config.GRAVITY;
 
         }
     }

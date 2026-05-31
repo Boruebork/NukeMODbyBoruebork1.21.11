@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "id": "justamod:enriched_uranium"
+    },
+    "title": "Make me rich",
+    "description": "What have you done.....",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "justamod:justamod/obtain_uranium",
+  "criteria": {
+    "enrich_uranium": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "justamod:enriched_uranium_dust"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "enrich_uranium"
+    ]
+  ],
+  "sends_telemetry_event": false
+}

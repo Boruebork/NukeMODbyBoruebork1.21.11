@@ -6,7 +6,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 @EventBusSubscriber
-public class PacketHandler {
+public class ServerPacketRegistry {
     @SubscribeEvent
     public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event){
         var registrar = event.registrar("1");

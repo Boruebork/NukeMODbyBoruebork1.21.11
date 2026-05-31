@@ -24,19 +24,19 @@ public class LaunchScreen extends Screen {
                 50,
                 20,
                 Component.literal("X"));
-        x.setPosition(20, 20);
+        x.setPosition(230, 100);
         y = new EditBox(this.font,
                 50,
                 20,
                 Component.literal("Y"));
-        y.setPosition(80, 20);
+        y.setPosition(x.getX() + 20 + y.getWidth(), 100);
         z = new EditBox(this.font,
                 50,
                 20,
                 Component.literal("Z"));
-        z.setPosition(140, 20);
+        z.setPosition(y.getX() + 20 + z.getWidth(), 100);
         launch = Button.builder(Component.literal("LAUNCH"), this::triggerLaunch).build();
-        launch.setPosition(this.width/2, this.height/2);
+        launch.setPosition(this.width/2-launch.getWidth()/2, this.height-100);
         addRenderableWidget(this.x);
         addRenderableWidget(this.y);
         addRenderableWidget(this.z);
