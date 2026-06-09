@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.gui.screen;
 
 import com.boruebork.nukemod.network.packet.LaunchPacket;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -16,6 +17,7 @@ public class LaunchScreen extends Screen {
     public LaunchScreen() {
         super(Component.literal("launch"));
     }
+
 
     @Override
     protected void init() {

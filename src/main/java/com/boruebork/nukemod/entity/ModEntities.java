@@ -15,6 +15,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+import java.util.function.Supplier;
+
 public class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(BuiltInRegistries.ENTITY_TYPE, NukeModbyBoruebork.MODID);
@@ -23,7 +25,7 @@ public class ModEntities {
     public static ResourceKey<EntityType<?>> GUIDED_MISSILE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("guided_missile"));
     public static ResourceKey<EntityType<?>> MUSHROOM_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("mushroom_key"));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<NukeEntity>> NUKE =
+    public static final Supplier<EntityType<NukeEntity>> NUKE =
             ENTITY_TYPES.register("nuke", () -> EntityType.Builder.of(NukeEntity::new,
                             MobCategory.MISC)
                     .sized(0.75f, 0.35f).build(NUKE_KEY));

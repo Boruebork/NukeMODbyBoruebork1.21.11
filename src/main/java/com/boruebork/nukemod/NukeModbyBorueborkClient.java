@@ -7,6 +7,7 @@ import com.boruebork.nukemod.explosion.client.FlashHandler;
 import com.boruebork.nukemod.explosion.client.packet.FlashPacket;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.gui.menu.EnricherScreen;
+import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherScreen;
 import com.boruebork.nukemod.gui.menu.IonizerScreen;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.neoforged.api.distmarker.Dist;
@@ -54,6 +55,7 @@ public class NukeModbyBorueborkClient {
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.ENRICHER_MENU.get(), EnricherScreen::new);
         event.register(ModMenuTypes.IONIZER_MENU.get(), IonizerScreen::new);
+        event.register(ModMenuTypes.GUIDED_MISSILE_MENU.get(), GuidedMissileLauncherScreen::new);
     }
 
 

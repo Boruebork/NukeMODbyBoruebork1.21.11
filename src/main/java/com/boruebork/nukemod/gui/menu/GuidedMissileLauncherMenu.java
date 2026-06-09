@@ -2,6 +2,7 @@ package com.boruebork.nukemod.gui.menu;
 
 import com.boruebork.nukemod.block.ModBlocks;
 import com.boruebork.nukemod.block.entity.EnricherBE;
+import com.boruebork.nukemod.block.entity.GuidedMissileLauncherBE;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -10,43 +11,26 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.phys.Vec2;
 import net.neoforged.neoforge.items.SlotItemHandler;
-import org.jspecify.annotations.Nullable;
 
-public class EnricherMenu extends AbstractContainerMenu {
-    public final EnricherBE blockEntity;
+public class GuidedMissileLauncherMenu extends AbstractContainerMenu {
+    public final GuidedMissileLauncherBE blockEntity;
     private final Level level;
-    private final ContainerData data;
-
-    public EnricherMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
+    public GuidedMissileLauncherMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
         this(pContainerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()), new SimpleContainerData(4));
     }
 
-
-    public EnricherMenu(int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(ModMenuTypes.ENRICHER_MENU.get(), pContainerId);
-        this.blockEntity = ((EnricherBE) entity);
+    public GuidedMissileLauncherMenu(int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {
+        super(ModMenuTypes.GUIDED_MISSILE_MENU.get(), pContainerId);
+        this.blockEntity = ((GuidedMissileLauncherBE) entity);
         this.level = inv.player.level();
-        this.data = data;
 
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
 
-        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 0, 79, 33));
+        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 0, 80, 34));
         addDataSlots(data);
     }
-    public boolean isCrafting() {
-        return data.get(0) > 0;
-    }
-    public int getScaledArrowProgress() {
-        int progress = this.data.get(0);
-        int maxProgress = this.data.get(1);
-        int arrowPixelSize = 24;
-
-        return maxProgress != 0 && progress != 0 ? progress * arrowPixelSize / maxProgress : 0;
-    }
-
     private static final int HOTBAR_SLOT_COUNT = 9;
     private static final int PLAYER_INVENTORY_ROW_COUNT = 3;
     private static final int PLAYER_INVENTORY_COLUMN_COUNT = 9;
@@ -56,7 +40,6 @@ public class EnricherMenu extends AbstractContainerMenu {
     private static final int TE_INVENTORY_FIRST_SLOT_INDEX = VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
 
     private static final int TE_INVENTORY_SLOT_COUNT = 2;
-
     @Override
     public ItemStack quickMoveStack(Player playerIn, int pIndex) {
         Slot sourceSlot = slots.get(pIndex);
@@ -89,23 +72,11 @@ public class EnricherMenu extends AbstractContainerMenu {
         sourceSlot.onTake(playerIn, sourceStack);
         return copyOfSourceStack;
     }
-    public int getPercentProgress(){
-        int progress = this.data.get(0);
-        int maxProgress = this.data.get(1);
-        if (maxProgress == 0) return 0;
-        return Math.round((float) (100 * progress) /maxProgress);
-    }
-    public int getPercentFuelProgress(){
-        int fuelTime = this.data.get(2);
-        int maxFuelTime = this.data.get(3);
-        if (maxFuelTime == 0) return 0;
-        return Math.round((float) (100 * fuelTime) /maxFuelTime);
-    }
 
     @Override
     public boolean stillValid(Player player) {
         return stillValid(ContainerLevelAccess.create(level, blockEntity.getBlockPos()),
-                player, ModBlocks.ENRICHER.get());
+                player, ModBlocks.GUIDED_LAUNCHER.get());
     }
     private void addPlayerInventory(Inventory playerInventory) {
         for (int i = 0; i < 3; ++i) {

@@ -2,6 +2,7 @@ package com.boruebork.nukemod.gui;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.gui.menu.EnricherMenu;
+import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherMenu;
 import com.boruebork.nukemod.gui.menu.IonizerMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -20,6 +21,8 @@ public class ModMenuTypes {
             registerMenuType("enricher_menu", EnricherMenu::new);
     public static final DeferredHolder<MenuType<?>, MenuType<IonizerMenu>> IONIZER_MENU =
             registerMenuType("ionizer_menu", IonizerMenu::new);
+    public static final DeferredHolder<MenuType<?>, MenuType<GuidedMissileLauncherMenu>> GUIDED_MISSILE_MENU =
+            registerMenuType("guided_missile_launcher_menu", GuidedMissileLauncherMenu::new);
 
 
     private static <T extends AbstractContainerMenu> DeferredHolder<MenuType<?>, MenuType<T>> registerMenuType(String name,
