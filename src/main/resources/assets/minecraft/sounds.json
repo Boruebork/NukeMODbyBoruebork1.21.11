@@ -1,0 +1,9 @@
+{
+  "music.game": {
+    "replace": false,
+    "sounds": [
+      { "name": "music/mysong1", "stream": true },
+      { "name": "music/mysong2", "stream": true }
+    ]
+  }
+}

@@ -42,6 +42,8 @@ public class MissileManager {
     public static void convertToData(GuidedMissile missile){
         INSTANCE.missiles.add(new GuidedMissileData(missile));
         INSTANCE.physicalMissiles.remove(missile);
+        System.err.println("Physical missiles: " + INSTANCE.physicalMissiles.size());
+        System.err.println("Data missiles: " + INSTANCE.missiles.size());
         System.err.println("converted missile to data");
 
     }
@@ -60,7 +62,7 @@ public class MissileManager {
         missile.setTarget(Objects.requireNonNull(INSTANCE.server.getPlayerList().getPlayer(data.targetUUID)));
         INSTANCE.physicalMissiles.add(missile);
         INSTANCE.missiles.remove(data);
-        INSTANCE.missileToRemove.remove(data);
+
         INSTANCE.server.getLevel(Level.OVERWORLD).addFreshEntity(missile);
         System.err.println("converted missile to entity");
     }
@@ -82,10 +84,20 @@ public class MissileManager {
         for (MissileData data : this.missileToRemove){
             convertToEntity((GuidedMissileData) data);
         }
+        if (!missileToRemove.isEmpty()) {
+            this.missileToRemove.clear();
+            System.err.println("Physical missiles: " + physicalMissiles.size());
+            System.err.println("Data missiles: " + missiles.size());
+        }
         for (Entity e : this.physicalMissilesToRemove){
             if (e instanceof GuidedMissile guidedMissile){
                 convertToData(guidedMissile);
             }
+        }
+        if (!physicalMissilesToRemove.isEmpty()){
+            this.physicalMissilesToRemove.clear();
+            System.err.println("Physical missiles: " + physicalMissiles.size());
+            System.err.println("Data missiles: " + missiles.size());
         }
     }
     public static void init(MinecraftServer server){

@@ -40,7 +40,7 @@ public class GuidedMissileData extends MissileData {
 
     @Override
     public void tick(MinecraftServer server) {
-        System.err.println("You are not alone...");
+        //System.err.println("You are not alone...");
         Level level = server.getLevel(Level.OVERWORLD);
         ServerPlayer targetPlayer = null;
 
@@ -90,7 +90,7 @@ public class GuidedMissileData extends MissileData {
         }
     }
     private void tickLaunch() {
-        System.err.println("launch RAM!");
+        //System.err.println("launch RAM!");
         speed = Math.min(speed + 0.1, maxSpeed);
 
         Vec3 desiredDirection =
@@ -107,7 +107,7 @@ public class GuidedMissileData extends MissileData {
         }
     }
     private void tickCruise(Vec3 targetPos) {
-        System.err.println("cruise RAM!");
+        //System.err.println("cruise RAM!");
         Vec3 toTarget =
                 targetPos.subtract(position);
 
@@ -141,7 +141,7 @@ public class GuidedMissileData extends MissileData {
         speed = Math.min(speed + 0.05, maxSpeed);
     }
     private void tickTerminal(Vec3 targetPos) {
-        System.err.println("RAM HUNT!!!!");
+        //System.err.println("RAM HUNT!!!!");
         speed = maxSpeed;
 
         Vec3 desiredDirection =

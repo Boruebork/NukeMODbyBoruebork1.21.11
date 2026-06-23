@@ -74,15 +74,13 @@ public class GuidedMissile extends Projectile {
     @Override
     public void tick() {
         super.tick();
-        System.err.println("OMG it is mr.Tick!");
         if (level().isClientSide()) {
-            System.err.println("Client??? Cleint???");
+
             return;
         }
 
         if (!this.active) {
             if (this.targetPlayer != null) this.active = true;
-            System.err.println("sleeping😴");
             return;
 
         }
@@ -91,7 +89,6 @@ public class GuidedMissile extends Projectile {
         if (!((ServerLevel) level()).isPositionEntityTicking(blockPosition())) {
             MissileManager.convertToData(this);
             discard();
-            System.err.println("badabim badabum!");
             return;
         }
 
@@ -100,7 +97,6 @@ public class GuidedMissile extends Projectile {
                 || !targetPlayer.isAlive()
                 || targetPlayer.level() != this.level()) {
             state = LockingState.NA;
-            System.err.println("Where did the prey go?");
         }
 
         Vec3 targetPos = state == LockingState.LOCKED
@@ -122,6 +118,10 @@ public class GuidedMissile extends Projectile {
             System.err.println("Whoops it is time to convert!");
         }
         // Apply movement
+
+        float yaw = (float)Math.toDegrees(Math.atan2(-this.direction.x, this.direction.z));
+        float pitch = (float)Math.toDegrees(Math.asin(-this.direction.y));
+        this.setRot(yaw, pitch);
         setDeltaMovement(direction.scale(speed));
         this.move(MoverType.SELF, this.getDeltaMovement());
 
