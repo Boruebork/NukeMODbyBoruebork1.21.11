@@ -9,6 +9,7 @@ import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.item.ModCreativeModeTabs;
 import com.boruebork.nukemod.item.ModItems;
 import com.boruebork.nukemod.missile.MissileManager;
+import com.boruebork.nukemod.sound.ModSounds;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
@@ -48,6 +49,7 @@ public class NukeModbyBoruebork {
         ModEntities.register(modEventBus);
         ModBE.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+        ModSounds.register(modEventBus);
 
 
         // Register ourselves for server and other game events we are interested in.

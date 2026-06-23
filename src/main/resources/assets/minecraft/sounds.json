@@ -1,9 +1,8 @@
 {
-  "music.game": {
-    "replace": false,
+  "missile_launch": {
+    "subtitle": "sounds.nukemodbyboruebork.missiile_sound",
     "sounds": [
-      { "name": "music/mysong1", "stream": true },
-      { "name": "music/mysong2", "stream": true }
+      "nukemodbyboruebork:missiile_sound"
     ]
   }
 }

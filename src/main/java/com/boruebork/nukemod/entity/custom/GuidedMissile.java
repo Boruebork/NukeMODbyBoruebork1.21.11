@@ -2,11 +2,13 @@ package com.boruebork.nukemod.entity.custom;
 
 import com.boruebork.nukemod.missile.MissileManager;
 import com.boruebork.nukemod.explosion.NuclearExplosion;
+import com.boruebork.nukemod.sound.ModSounds;
 import com.boruebork.nukemod.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
@@ -39,6 +41,7 @@ public class GuidedMissile extends Projectile {
     private Vec3 lastTargetPosition;
     private LockingState state;
     public double speed;
+    private int soundTick = 0;
     private static double maxSpeed = 2;
     // Настройки баллистики
     private final double cruiseHeight = 120.0; // Высота (Y), на которую ракета поднимается (выше деревьев/гор)
@@ -57,6 +60,7 @@ public class GuidedMissile extends Projectile {
         this.active = true;
         System.err.println(player);
         System.err.println("set target!");
+        this.setSilent(false);
     }
 
     @Override
@@ -124,7 +128,12 @@ public class GuidedMissile extends Projectile {
         this.setRot(yaw, pitch);
         setDeltaMovement(direction.scale(speed));
         this.move(MoverType.SELF, this.getDeltaMovement());
-
+        if (soundTick <= 0){
+            this.playSound(ModSounds.MISSILE_LAUNCH.get());
+            soundTick = 20;
+        }else {
+            soundTick--;
+        }
         // Collision
         if (this.explosionSHield <= 0) {
             if (horizontalCollision
