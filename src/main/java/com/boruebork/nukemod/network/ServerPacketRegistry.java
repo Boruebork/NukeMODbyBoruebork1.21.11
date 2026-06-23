@@ -1,5 +1,6 @@
 package com.boruebork.nukemod.network;
 
+import com.boruebork.nukemod.network.packet.LaunchGuidedPacket;
 import com.boruebork.nukemod.network.packet.LaunchPacket;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -14,6 +15,11 @@ public class ServerPacketRegistry {
                 LaunchPacket.TYPE,
                 LaunchPacket.STREAM_CODEC,
                 ServerPayloadHandler::handleLaunch
+        );
+        registrar.playToServer(
+                LaunchGuidedPacket.TYPE,
+                LaunchGuidedPacket.STREAM_CODEC,
+                ServerPayloadHandler::handleGuidedlaunch
         );
     }
 }

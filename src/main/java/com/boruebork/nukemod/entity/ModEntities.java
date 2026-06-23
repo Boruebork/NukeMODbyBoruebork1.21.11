@@ -32,7 +32,7 @@ public class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<GuidedMissile>> GUIDED_MISILE =
             ENTITY_TYPES.register("guided_nuclear_missile", () -> EntityType.Builder.of(GuidedMissile::new,
                             MobCategory.MISC)
-                    .sized(0.75f, 0.35f).build(GUIDED_MISSILE_KEY));
+                    .sized(3, 1).build(GUIDED_MISSILE_KEY));
     public static final DeferredHolder<EntityType<?>, EntityType<MushroomEntity>> MUSHROOM_ENTITY =
             ENTITY_TYPES.register("nuclear_mushroom", () -> EntityType.Builder.of(MushroomEntity::new,
                             MobCategory.MISC)

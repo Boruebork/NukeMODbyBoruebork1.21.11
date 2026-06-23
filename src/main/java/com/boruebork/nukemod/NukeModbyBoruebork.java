@@ -5,16 +5,11 @@ import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.explosion.ExpandingExplosion;
 import com.boruebork.nukemod.explosion.NuclearExplosion;
-import com.boruebork.nukemod.explosion.client.FlashHandler;
-import com.boruebork.nukemod.explosion.client.packet.FlashPacket;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.item.ModCreativeModeTabs;
 import com.boruebork.nukemod.item.ModItems;
-import net.minecraft.server.MinecraftServer;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import com.boruebork.nukemod.missile.MissileManager;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -36,6 +31,7 @@ import java.util.List;
 public class NukeModbyBoruebork {
     // Define mod id in a common place for everything to reference
     public static final String MODID = "nukemodbyboruebork";
+
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
     public static List<ExpandingExplosion> explosions = new ArrayList<>();
@@ -92,6 +88,7 @@ public class NukeModbyBoruebork {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
+        MissileManager.init(event.getServer());
         ExpandingExplosion.generateShells();
     }
     

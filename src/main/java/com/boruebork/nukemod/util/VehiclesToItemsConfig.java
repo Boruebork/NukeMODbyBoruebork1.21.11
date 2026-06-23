@@ -12,7 +12,15 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class VehiclesToItemsConfig {
+    public static Supplier<? extends EntityType<?>> getEntity(Item item){
+        for (DeferredItem<Item> it : DATA.keySet()){
+            if (it.get() == item){
+                return DATA.get(it);
+            }
+        }
+        return null;
+    }
     public static final Map<DeferredItem<Item>, Supplier<? extends EntityType<?>>> DATA = Map.of(
-            ModItems.NUCLEAR_WARHEAD, ModEntities.NUKE
+            ModItems.NUCLEAR_WARHEAD, ModEntities.GUIDED_MISILE
     );
 }

@@ -2,10 +2,12 @@ package com.boruebork.nukemod.gui.menu;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.ModEntities;
+import com.boruebork.nukemod.entity.custom.GuidedMissile;
 import com.boruebork.nukemod.entity.custom.NukeEntity;
 import com.boruebork.nukemod.entity.custom.client.NukeRenderState;
 import com.boruebork.nukemod.gui.selectionlists.PlayerListUser;
 import com.boruebork.nukemod.gui.selectionlists.PlayerSelectionList;
+import com.boruebork.nukemod.network.packet.LaunchGuidedPacket;
 import com.boruebork.nukemod.util.Colors;
 import com.boruebork.nukemod.util.VehiclesToItemsConfig;
 import net.minecraft.client.Minecraft;
@@ -28,6 +30,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.registries.DeferredItem;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -55,7 +58,8 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
         this.list.generateEntries();
         this.list.setParent(this);
         this.launch = new Button.Builder(Component.literal("LAUNCH"), (button) -> {
-            
+            if (playerSelected != null)
+                ClientPacketDistributor.sendToServer(new LaunchGuidedPacket(playerSelected.getProfile().id()));
         }).build();
         this.launch.setPosition(x + 66, y + 66);
         this.launch.setHeight(12);
@@ -82,6 +86,13 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
         }
         return this.fakeRocket;
     }
+
+    @Override
+    public void render(GuiGraphics p_283479_, int p_283661_, int p_281248_, float p_281886_) {
+        super.render(p_283479_, p_283661_, p_281248_, p_281886_);
+        renderTooltip(p_283479_, p_283661_, p_281248_);
+    }
+
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float v, int i, int i1) {
         int x = (width - imageWidth) / 2;
@@ -89,7 +100,9 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BG, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
         guiGraphics.drawString(this.font, this.playerSelected == null ? "N/A" : "LOCKED", x + 133, y +58, this.playerSelected == null ? Colors.RED : Colors.GREEN);
         guiGraphics.drawString(this.font, this.playerSelected == null ? "N/A" : this.playerSelected.getProfile().name(), x + 103, y + 71, this.playerSelected == null ? Colors.RED : Colors.GREEN);
-        if (fakeRocket != null)
+        Component.translatable("item.nukemodbyboruebork.nuclear_warhead");
+        //if (fakeRocket != null)
+        if (this.fakeRocket != null)
             renderNukePreview(guiGraphics, x, y, this.fakeRocket, i1);
 
 
@@ -100,7 +113,7 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
     @Override
     protected void containerTick() {
         super.containerTick();
-        ItemStack stackInSlot = this.menu.getSlot(0).getItem();
+        ItemStack stackInSlot = this.menu.getSlot(36).getItem();
         if (!stackInSlot.isEmpty()) {
 
             // 2. Вытаскиваем ванильный Holder<Item> из стака
@@ -109,12 +122,11 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
             // 3. Ищем в твоей карте. Так как DeferredItem реализует интерфейс Holder,
             // ты можешь использовать метод .value() или напрямую сопоставлять ключи,
             // но безопаснее всего искать по самому объекту Item, чтобы не воевать с дженериками NeoForge!
-            System.err.println("ahh");
+
             for (java.util.Map.Entry<DeferredItem<Item>, ?> entry : VehiclesToItemsConfig.DATA.entrySet()) {
-                System.err.println("looping");
                 // Сравниваем чистые объекты Item из карты и из слота
-                if (entry.getKey().get() == itemHolder.value()) {
-                    System.err.println("mathc found");
+                if (entry.getKey().get().asItem() == itemHolder.value().asItem()) {
+
                     // Нашли совпадение! Достаем наш Supplier / Holder сущности
                     java.util.function.Supplier entitySupplier = (java.util.function.Supplier) entry.getValue();
 
@@ -123,7 +135,7 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
                     // Создаем фейковую ракету для рендера
                     if (this.fakeRocket == null || this.fakeRocket.getType() != entityType) {
                         this.fakeRocket = entityType.create(this.minecraft.level, EntitySpawnReason.COMMAND);
-                        System.err.println(this.fakeRocket);
+
                     }
                     break;
                 }
@@ -164,13 +176,18 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
                 state.boundingBoxHeight * 0.5F,
                 0.0F
         );
+        int scale = 40;
         if (entity instanceof NukeEntity){
             offset.y += 1.25f;
+        }
+        if (entity instanceof GuidedMissile){
+            offset.y += 0.6f;
+            scale = 20;
         }
 
         guiGraphics.submitEntityRenderState(
                 state,
-                40,          // scale, adjust as needed
+                scale,          // scale, adjust as needed
                 offset,
                 rotation,
                 new Quaternionf(),
@@ -195,5 +212,10 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
         state.outlineColor = 0;
 
         return state;
+    }
+
+    @Override
+    protected void renderTooltip(GuiGraphics guiGraphics, int x, int y) {
+        super.renderTooltip(guiGraphics, x, y);
     }
 }

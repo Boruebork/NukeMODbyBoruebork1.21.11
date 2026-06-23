@@ -1,6 +1,7 @@
 package com.boruebork.nukemod;
 
 import com.boruebork.nukemod.entity.ModEntities;
+import com.boruebork.nukemod.entity.custom.client.GuidedMissileRenderer;
 import com.boruebork.nukemod.entity.custom.client.MushroomEntityRenderer;
 import com.boruebork.nukemod.entity.custom.client.NukeEntityRenderer;
 import com.boruebork.nukemod.explosion.client.FlashHandler;
@@ -44,6 +45,10 @@ public class NukeModbyBorueborkClient {
         event.registerEntityRenderer(
                 ModEntities.NUKE.get(),
                 NukeEntityRenderer::new
+        );
+        event.registerEntityRenderer(
+                ModEntities.GUIDED_MISILE.get(),
+                GuidedMissileRenderer::new
         );
         event.registerEntityRenderer(
                 ModEntities.MUSHROOM_ENTITY.get(),
