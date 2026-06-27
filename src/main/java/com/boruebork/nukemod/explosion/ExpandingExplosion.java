@@ -1,13 +1,11 @@
 package com.boruebork.nukemod.explosion;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.nuke.Shockwave;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -54,10 +52,10 @@ public class ExpandingExplosion {
         System.err.println("generated shell for radius: " + r);
     }
 
-    public static ExpandingExplosion createExplosion(ServerLevel level, BlockPos pos, int radius){
-        NukeModbyBoruebork.explosions.add(new ExpandingExplosion(level, pos, radius));
+    /*public static ExpandingExplosion createExplosion(ServerLevel level, BlockPos pos, int radius){
+        ExplosionManager.getInstance().add(new ExpandingExplosion(level, pos, radius));
         return NukeModbyBoruebork.explosions.getLast();
-    }
+    }*/
 
     public boolean isFinished() {
         return finished;

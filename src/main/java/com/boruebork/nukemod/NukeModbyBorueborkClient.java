@@ -4,6 +4,7 @@ import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.entity.custom.client.GuidedMissileRenderer;
 import com.boruebork.nukemod.entity.custom.client.MushroomEntityRenderer;
 import com.boruebork.nukemod.entity.custom.client.NukeEntityRenderer;
+import com.boruebork.nukemod.explosion.NuclearExplosion;
 import com.boruebork.nukemod.explosion.client.FlashHandler;
 import com.boruebork.nukemod.explosion.client.packet.FlashPacket;
 import com.boruebork.nukemod.gui.ModMenuTypes;
@@ -17,12 +18,16 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = NukeModbyBoruebork.MODID, dist = Dist.CLIENT)
@@ -35,6 +40,7 @@ public class NukeModbyBorueborkClient {
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
+
 
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {

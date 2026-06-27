@@ -68,6 +68,7 @@ public class ServerPayloadHandler {
             if (context.player().containerMenu instanceof GuidedMissileLauncherMenu menu1)
                 toSpawn.setPos(Util.BlockPosTooVec3(menu1.blockEntity.getBlockPos()));
             toSpawn.setTarget(Objects.requireNonNull(MissileManager.INSTANCE.server.getPlayerList().getPlayer(launchPacket.targetUUID())));
+            toSpawn.activate();
             MissileManager.spawnMissile(toSpawn);
             System.err.println("spawned missile!");
         }

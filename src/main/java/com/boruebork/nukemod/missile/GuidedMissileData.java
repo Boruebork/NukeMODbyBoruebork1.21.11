@@ -32,7 +32,7 @@ public class GuidedMissileData extends MissileData {
                 missile.targetPlayer().position(),
                 missile.speed
         );
-
+        this.id = missile.getUUID();
         this.targetUUID = missile.targetPlayer().getUUID();
         this.missileState = missile.currentState();
         this.lockingState = missile.state();
@@ -84,10 +84,8 @@ public class GuidedMissileData extends MissileData {
 
         ServerLevel level1 = server.getLevel(Level.OVERWORLD);
 
-        assert level1 != null;
-        if (level1.isPositionEntityTicking(BlockPos.containing(position))) {
-            MissileManager.queueRemoval(this);
-            return;
+        if (level1.isPositionEntityTicking(BlockPos.containing(this.position))) {
+            MissileManager.convertToEntity(this);
         }
     }
     private void tickLaunch() {

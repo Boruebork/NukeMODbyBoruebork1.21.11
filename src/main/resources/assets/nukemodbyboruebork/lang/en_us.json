@@ -37,8 +37,11 @@
   "creativetab.nukemodbyboruebork.machine_tab": "Machines",
 
 
-  "advancements.justamod.root.title": "Just a MOD",
-  "advancements.justamod.root.description": "Or is it?",
+  "advancements.nukemodbyboruebork.root.title": "Just a MOD",
+  "advancements.nukemodbyboruebork.root.description": "Or is it?",
 
-  "entity.justamod.nuke": "Nuke"
+  "entity.nukemodbyboruebork.nuke": "Nuke",
+
+  "sounds.nukemodbyboruebork.missile_sound" : "Missile Whoosh",
+  "sounds.nukemodbyboruebork.missile_warning" : "Missile Warning"
 }

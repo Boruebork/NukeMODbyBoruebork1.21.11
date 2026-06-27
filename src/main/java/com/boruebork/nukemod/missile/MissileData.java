@@ -3,6 +3,8 @@ package com.boruebork.nukemod.missile;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.UUID;
+
 public class MissileData
 {
     public MissileData(Vec3 current, Vec3 rotation, Vec3 target, double speed) {
@@ -11,6 +13,7 @@ public class MissileData
         this.target = target;
         this.speed = speed;
     }
+    public UUID id;
     double speed;
     Vec3 position;
     Vec3 direction;

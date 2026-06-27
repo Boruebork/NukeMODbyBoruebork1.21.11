@@ -150,7 +150,12 @@ public class ModRecipeProvider extends RecipeProvider {
                 .define('Q', Items.QUARTZ)
                 .define('R', Items.REDSTONE)
                 .unlockedBy("has_redstone", has(Items.REDSTONE)).save(output);
-
+        shaped(RecipeCategory.MISC, ModItems.IONIZER.get())
+                .pattern("ID")
+                .pattern("II")
+                .define('I', Items.IRON_INGOT)
+                .define('D', ModItems.DIAMOND_ROD)
+                .unlockedBy("has_diamond_rod", has(ModItems.DIAMOND_ROD)).save(output);
         shaped(RecipeCategory.MISC, ModBlocks.WATER_IONIZER.get())
                 .pattern("IRI")
                 .pattern("IOI")
@@ -168,6 +173,20 @@ public class ModRecipeProvider extends RecipeProvider {
                 .define('O', ModItems.IONIZER)
                 .define('R', Items.REDSTONE)
                 .unlockedBy("has_ionizer", has(ModItems.IONIZER)).save(output);
+        shapeless(RecipeCategory.MISC, ModItems.ELECTRONICS.get())
+                .requires(ModItems.RARE_DUST.get())
+                .requires(Items.REDSTONE)
+                .requires(ModItems.URANIUM_DUST.get())
+                .unlockedBy("has_rare_dust", has(ModItems.RARE_DUST)).save(output);
+        shaped(RecipeCategory.COMBAT, ModBlocks.GUIDED_LAUNCHER.get())
+                .pattern("III")
+                .pattern("EEE")
+                .pattern("TBT")
+                .define('I', Items.IRON_BLOCK)
+                .define('E', ModItems.ELECTRONICS)
+                .define('B', ModBlocks.MODERN_ALLOY_BLOCK)
+                .define('T', Items.REDSTONE_TORCH)
+                .unlockedBy("has_electronics", has(ModItems.ELECTRONICS)).save(output);
     }
 
     protected void oreSmelting(RecipeOutput recipeOutput, List<ItemLike> pIngredients, RecipeCategory pCategory, ItemLike pResult,

@@ -1,6 +1,6 @@
 package com.boruebork.nukemod.explosion.client;
 
-import com.boruebork.nukemod.explosion.client.packet.FlashPacket;
+
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -15,19 +15,19 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public class FlashHandler {
     public static int TOTAL_FLASH_TIME = 40; //In ticks
     public static int currentFlashTime = 0;
-    public static void startFlash(final FlashPacket packet, IPayloadContext context){
+    /*public static void startFlash(final FlashPacket packet, IPayloadContext context){
         context.enqueueWork(() -> {
             TOTAL_FLASH_TIME = packet.flashTime();
             currentFlashTime = TOTAL_FLASH_TIME;
             System.err.println("started flash");
         });
 
-    }
+    }*/
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event){
         if (currentFlashTime > 0) currentFlashTime--;
     }
-    /*@SubscribeEvent
+    @SubscribeEvent
     public static void overrideOverlayEvent(RenderGuiLayerEvent.Pre event) {
         if (currentFlashTime <= 0) return;
         System.err.println("flashing!");
@@ -43,5 +43,5 @@ public class FlashHandler {
                 Minecraft.getInstance().getWindow().getGuiScaledHeight(),
                 color
         );
-    }*/
+    }
 }

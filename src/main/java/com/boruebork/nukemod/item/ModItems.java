@@ -37,6 +37,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> IONIZER = ITEMS.registerSimpleItem("ionizer");
 
+    public static final DeferredItem<Item> ELECTRONICS = ITEMS.registerSimpleItem("electronics");
+
+
 
 
     public static void register(IEventBus eventBus) {

@@ -36,7 +36,7 @@ public class ModModelProvider extends ModelProvider {
         itemModels.generateFlatItem(ModItems.MODERN_ALLOY.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         itemModels.generateFlatItem(ModItems.NUCLEAR_WARHEAD.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         itemModels.generateFlatItem(ModItems.IONIZER.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
-
+        itemModels.generateFlatItem(ModItems.ELECTRONICS.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         //BLOCKS
 
         blockModels.createTrivialCube(ModBlocks.TITANIUM_BLOCK.get());
@@ -53,14 +53,16 @@ public class ModModelProvider extends ModelProvider {
         blockModels.createTrivialCube(ModBlocks.MODERN_ALLOY_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.URANIUM_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.RARE_DUST_BLOCK.get());
-        blockModels.createTrivialCube(ModBlocks.ENRICHER.get());
+        //blockModels.createTrivialCube(ModBlocks.ENRICHER.get());
         blockModels.createTrivialCube(ModBlocks.WATER_IONIZER.get());
+        blockModels.createTrivialCube(ModBlocks.GUIDED_LAUNCHER.get());
+        blockModels.createTrivialCube(ModBlocks.LAUNCHER.get());
 
     }
 
     @Override
     protected Stream<? extends Holder<Block>> getKnownBlocks() {
-        return ModBlocks.BLOCKS.getEntries().stream();
+        return ModBlocks.BLOCKS.getEntries().stream().filter(blockDeferredHolder -> blockDeferredHolder != ModBlocks.ENRICHER);
     }
 
     @Override

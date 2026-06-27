@@ -3,6 +3,7 @@ package com.boruebork.nukemod;
 import com.boruebork.nukemod.block.ModBlocks;
 import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.entity.ModEntities;
+import com.boruebork.nukemod.entity.custom.GuidedMissile;
 import com.boruebork.nukemod.explosion.ExpandingExplosion;
 import com.boruebork.nukemod.explosion.NuclearExplosion;
 import com.boruebork.nukemod.gui.ModMenuTypes;
@@ -10,6 +11,8 @@ import com.boruebork.nukemod.item.ModCreativeModeTabs;
 import com.boruebork.nukemod.item.ModItems;
 import com.boruebork.nukemod.missile.MissileManager;
 import com.boruebork.nukemod.sound.ModSounds;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
@@ -35,8 +38,8 @@ public class NukeModbyBoruebork {
 
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
-    public static List<ExpandingExplosion> explosions = new ArrayList<>();
-    public static List<NuclearExplosion> newExplosions = new ArrayList<>();
+    //public static List<ExpandingExplosion> explosions = new ArrayList<>();
+
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
     public NukeModbyBoruebork(IEventBus modEventBus, ModContainer modContainer) {
@@ -73,19 +76,7 @@ public class NukeModbyBoruebork {
     }
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Pre event){
-        long start = System.nanoTime();
-        while (
-                ExpandingExplosion.currentShellGened <= ExpandingExplosion.MAX_RADIUS &&
-                        System.nanoTime() - start < 2_000_000 // 2 ms
-        ) {
-            ExpandingExplosion.generateShells();
-        }
-        /*for (ExpandingExplosion explosion : explosions){
-            explosion.tick1();
-        }*/
-        for (NuclearExplosion explosion: newExplosions){
-            explosion.tick();
-        }
+        MissileManager.INSTANCE.tick();
     }
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent

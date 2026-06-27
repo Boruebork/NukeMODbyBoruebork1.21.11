@@ -4,6 +4,7 @@ import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.GuidedMissile;
 import com.boruebork.nukemod.entity.custom.NukeEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -25,7 +26,10 @@ public class GuidedMissileRenderer extends EntityRenderer<GuidedMissile, GuidedM
     @Override
     public void submit(GuidedMissileRenderstate renderState, PoseStack poseStack, SubmitNodeCollector nodeCollector, CameraRenderState cameraRenderState) {
         super.submit(renderState, poseStack, nodeCollector, cameraRenderState);
+        poseStack.pushPose();
+        poseStack.rotateAround(Axis.XN.rotationDegrees(180), 0 , 0, 0);
         nodeCollector.submitModel(this.model, renderState, poseStack, this.model.renderType(TEXTURE), renderState.lightCoords, OverlayTexture.NO_OVERLAY, renderState.outlineColor, (ModelFeatureRenderer.CrumblingOverlay) null);
+        poseStack.popPose();
     }
 
     @Override

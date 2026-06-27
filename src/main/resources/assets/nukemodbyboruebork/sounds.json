@@ -1,0 +1,14 @@
+{
+  "missile_launch": {
+    "subtitle": "sounds.nukemodbyboruebork.missile_sound",
+    "sounds": [
+      "nukemodbyboruebork:missile_sound"
+    ]
+  },
+  "missile_warning": {
+    "subtitle": "sounds.nukemodbyboruebork.missile_warning",
+    "sounds" :[
+      "nukemodbyboruebork:missile_warning"
+    ]
+  }
+}

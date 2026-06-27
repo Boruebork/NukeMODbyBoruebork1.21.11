@@ -181,7 +181,7 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
             offset.y += 1.25f;
         }
         if (entity instanceof GuidedMissile){
-            offset.y += 0.6f;
+            offset.y -= 0.7f;
             scale = 20;
         }
 
