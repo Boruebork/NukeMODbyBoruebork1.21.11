@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.block.custom;
 
 import com.boruebork.nukemod.block.entity.GuidedMissileLauncherBE;
+import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.block.entity.WaterIonizerBE;
 import com.boruebork.nukemod.item.ModItems;
 import com.mojang.serialization.MapCodec;
@@ -14,7 +15,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
@@ -43,9 +47,22 @@ public class GuidedMissileLauncher extends BaseEntityBlock {
         }
         return InteractionResult.SUCCESS;
     }
-
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.INVISIBLE;
+    }
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos blockPos, BlockState blockState) {
         return new GuidedMissileLauncherBE(blockPos, blockState);
+    }
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
+        /*if(level.isClientSide()) {
+            return null;
+        }*/
+
+        return createTickerHelper(blockEntityType, ModBE.GUIDED_LAUNCHER_BE.get(),
+                (level1, blockPos, blockState, blockEntity) -> blockEntity.tick(level1, blockPos, blockState));
     }
 }

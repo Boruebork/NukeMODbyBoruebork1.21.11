@@ -10,5 +10,23 @@
     "sounds" :[
       "nukemodbyboruebork:missile_warning"
     ]
+  },
+  "close_nuke": {
+    "subtitle": "sounds.nukemodbyboruebork.close_nuke",
+    "sounds": [
+      "nukemodbyboruebork:close_nuke"
+    ]
+  },
+  "distant_nuke": {
+    "subtitle": "sounds.nukemodbyboruebork.distant_nuke",
+    "sounds": [
+      "nukemodbyboruebork:distant_nuke"
+    ]
+  },
+  "flash": {
+    "subtitle": "sounds.nukemodbyboruebork.flash",
+    "sounds": [
+      "nukemodbyboruebork:flash"
+    ]
   }
 }

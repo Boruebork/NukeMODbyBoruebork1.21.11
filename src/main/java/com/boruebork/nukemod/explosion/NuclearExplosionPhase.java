@@ -10,7 +10,7 @@ import java.util.function.IntFunction;
 public enum NuclearExplosionPhase {
     FLASH(0),
     SHOCKWAVE(1),
-    MUSHROOM_AND_RADIATION(2);
+    FALLOUT(2);
     private final int id;
 
     // Create a fast ID lookup map using Vanilla's helper

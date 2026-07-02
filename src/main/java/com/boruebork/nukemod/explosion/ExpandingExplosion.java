@@ -1,6 +1,5 @@
 package com.boruebork.nukemod.explosion;
 
-import com.boruebork.nukemod.NukeModbyBoruebork;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleTypes;
@@ -60,7 +59,8 @@ public class ExpandingExplosion {
     public boolean isFinished() {
         return finished;
     }
-    public void tick1(){
+    public void tick(){
+        System.err.println("Explosion tick");
         if (ageInTicks % 2 == 0){
             ageInTicks = 1;
             return;
@@ -97,7 +97,7 @@ public class ExpandingExplosion {
         }
         currentRadius++;
     }
-    public void tick() {
+    /*public void tick() {
         if (finished) {
             return;
         }
@@ -126,7 +126,7 @@ public class ExpandingExplosion {
         if (currentRadius > maxRadius) {
             finished = true;
         }
-    }
+    }*/
 
     private void destroyMiniSphere(BlockPos centerPos, int radius) {
 

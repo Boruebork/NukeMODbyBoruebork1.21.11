@@ -35,8 +35,8 @@ public class MissileManager {
     public static void spawnMissile(GuidedMissile missile) {
         INSTANCE.physicalMissiles.put(missile.getUUID(), missile);
         INSTANCE.server.getLevel(Level.OVERWORLD).addFreshEntity(missile);
-        System.out.println("Physical: " + INSTANCE.physicalMissiles.size());
-        System.out.println("Data: " + INSTANCE.dataMissiles.size());
+        //System.out.println("Physical: " + INSTANCE.physicalMissiles.size());
+        //System.out.println("Data: " + INSTANCE.dataMissiles.size());
     }
 
     // -------------------------
@@ -98,8 +98,8 @@ public class MissileManager {
     // TICK
     // -------------------------
     public void tick() {
-        System.out.println("Physical: " + INSTANCE.physicalMissiles.size());
-        System.out.println("Data: " + INSTANCE.dataMissiles.size());
+        //System.out.println("Physical: " + INSTANCE.physicalMissiles.size());
+        //System.out.println("Data: " + INSTANCE.dataMissiles.size());
         // tick data missiles
         for (MissileData data : dataMissiles.values()) {
             data.tick(server);
@@ -111,10 +111,10 @@ public class MissileManager {
 
             boolean ticking = level.isPositionEntityTicking(missile.blockPosition());
 
-            System.out.println(
-                    "Missile at " + missile.blockPosition() +
-                            " ticking=" + ticking
-            );
+            //System.out.println(
+             //       "Missile at " + missile.blockPosition() +
+            //                " ticking=" + ticking
+            //);
 
             if (!ticking) {
                 System.out.println("CONVERTING!");
@@ -122,8 +122,8 @@ public class MissileManager {
             }
         }
 
-        System.out.println("Physical: " + physicalMissiles.size());
-        System.out.println("Data: " + dataMissiles.size());
+        //System.out.println("Physical: " + physicalMissiles.size());
+        //System.out.println("Data: " + dataMissiles.size());
     }
 
     // -------------------------

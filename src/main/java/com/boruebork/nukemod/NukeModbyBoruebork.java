@@ -2,6 +2,7 @@ package com.boruebork.nukemod;
 
 import com.boruebork.nukemod.block.ModBlocks;
 import com.boruebork.nukemod.block.entity.ModBE;
+import com.boruebork.nukemod.block.entity.renderer.GuidedMissileLauncherBER;
 import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.entity.custom.GuidedMissile;
 import com.boruebork.nukemod.explosion.ExpandingExplosion;
@@ -11,8 +12,10 @@ import com.boruebork.nukemod.item.ModCreativeModeTabs;
 import com.boruebork.nukemod.item.ModItems;
 import com.boruebork.nukemod.missile.MissileManager;
 import com.boruebork.nukemod.sound.ModSounds;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
@@ -35,7 +38,9 @@ import java.util.List;
 public class NukeModbyBoruebork {
     // Define mod id in a common place for everything to reference
     public static final String MODID = "nukemodbyboruebork";
-
+    public static Identifier identifierFromPath(String path){
+        return Identifier.fromNamespaceAndPath(MODID, path);
+    }
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
     //public static List<ExpandingExplosion> explosions = new ArrayList<>();
@@ -84,5 +89,5 @@ public class NukeModbyBoruebork {
         MissileManager.init(event.getServer());
         ExpandingExplosion.generateShells();
     }
-    
+
 }

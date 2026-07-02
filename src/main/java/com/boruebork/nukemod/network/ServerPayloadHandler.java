@@ -11,6 +11,7 @@ import com.boruebork.nukemod.item.ModItems;
 import com.boruebork.nukemod.missile.MissileManager;
 import com.boruebork.nukemod.network.packet.LaunchGuidedPacket;
 import com.boruebork.nukemod.network.packet.LaunchPacket;
+import com.boruebork.nukemod.network.packet.TargetSelectedPacket;
 import com.boruebork.nukemod.util.Util;
 import com.boruebork.nukemod.util.VehiclesToItemsConfig;
 import net.minecraft.network.chat.Component;
@@ -22,6 +23,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -71,6 +73,14 @@ public class ServerPayloadHandler {
             toSpawn.activate();
             MissileManager.spawnMissile(toSpawn);
             System.err.println("spawned missile!");
+        }
+    }
+
+    public static void handleTargetSelected(TargetSelectedPacket targetSelectedPacket, IPayloadContext context) {
+        BlockEntity e = context.player().level().getBlockEntity(targetSelectedPacket.pos());
+        if (e instanceof GuidedMissileLauncherBE be){
+            be.setTarget(targetSelectedPacket.target());
+            System.err.println("set target in BE");
         }
     }
 }

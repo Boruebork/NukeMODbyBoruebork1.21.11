@@ -18,6 +18,12 @@ public class ModSounds {
 
     public static final Supplier<SoundEvent> MISSILE_WARNING = registerSoundEvent("missile_warning");
 
+    public static final Supplier<SoundEvent> NUKE_CLOSE = registerSoundEvent("close_nuke");
+
+    public static final Supplier<SoundEvent> NUKE_DISTANT = registerSoundEvent("nuke_distant");
+
+    public static final Supplier<SoundEvent> FLASH = registerSoundEvent("flash");
+
     private static Supplier<SoundEvent> registerSoundEvent(String name) {
         Identifier id = Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID, name);
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(id));

@@ -2,6 +2,7 @@ package com.boruebork.nukemod.block.custom;
 
 import com.boruebork.nukemod.block.entity.LauncherBE;
 import com.boruebork.nukemod.explosion.ExpandingExplosion;
+import com.boruebork.nukemod.explosion.ExplosionManager;
 import com.boruebork.nukemod.explosion.NuclearExplosion;
 import com.boruebork.nukemod.item.ModItems;
 import com.mojang.serialization.MapCodec;
@@ -33,7 +34,7 @@ public class LauncherBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide()){
-            NuclearExplosion.createExplosion((ServerLevel) level, pos);
+            ExplosionManager.addExplosion((ServerLevel) level, pos);
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;

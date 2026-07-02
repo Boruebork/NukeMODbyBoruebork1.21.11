@@ -33,7 +33,10 @@ public class EnricherMenu extends AbstractContainerMenu {
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
 
-        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 0, 79, 33));
+        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 0, 54, 34));
+        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 1, 104, 34));
+        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 2 , 79, 33));
+
         addDataSlots(data);
     }
     public boolean isCrafting() {

@@ -36,7 +36,7 @@ public class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<MushroomEntity>> MUSHROOM_ENTITY =
             ENTITY_TYPES.register("nuclear_mushroom", () -> EntityType.Builder.of(MushroomEntity::new,
                             MobCategory.MISC)
-                    .sized(6, 7).build(MUSHROOM_KEY));
+                    .sized(6, 7).noSave().build(MUSHROOM_KEY));
 
 
     public static void register(IEventBus eventBus) {

@@ -1,12 +1,12 @@
 package com.boruebork.nukemod.network;
 
-import com.boruebork.nukemod.network.packet.LaunchGuidedPacket;
-import com.boruebork.nukemod.network.packet.LaunchPacket;
+import com.boruebork.nukemod.NukeModbyBoruebork;
+import com.boruebork.nukemod.network.packet.*;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
-@EventBusSubscriber
+@EventBusSubscriber(modid = NukeModbyBoruebork.MODID)
 public class ServerPacketRegistry {
     @SubscribeEvent
     public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event){
@@ -20,6 +20,19 @@ public class ServerPacketRegistry {
                 LaunchGuidedPacket.TYPE,
                 LaunchGuidedPacket.STREAM_CODEC,
                 ServerPayloadHandler::handleGuidedlaunch
+        );
+        registrar.playToClient(
+                NuclearExplosionUpdateClientPacket.TYPE,
+                NuclearExplosionUpdateClientPacket.STREAM_CODEC
+        );
+        registrar.playToClient(
+                DiscardNuclearExplPacket.TYPE,
+                DiscardNuclearExplPacket.STREAM_CODEC
+        );
+        registrar.playToServer(
+                TargetSelectedPacket.TYPE,
+                TargetSelectedPacket.STREAM_CODEC,
+                ServerPayloadHandler::handleTargetSelected
         );
     }
 }

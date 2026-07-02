@@ -1,17 +1,19 @@
 package com.boruebork.nukemod.entity.custom;
 
-import com.boruebork.nukemod.entity.custom.client.MissileWarningSound;
+import com.boruebork.nukemod.entity.custom.sound.MissileWarningSound;
+import com.boruebork.nukemod.explosion.ExplosionManager;
 import com.boruebork.nukemod.missile.MissileManager;
-import com.boruebork.nukemod.explosion.NuclearExplosion;
 import com.boruebork.nukemod.sound.ModSounds;
 import com.boruebork.nukemod.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
@@ -25,7 +27,13 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
+import static com.boruebork.nukemod.explosion.NukeConfig.SIREN_ACTIVATION_DISTANCE;
+
 public class GuidedMissile extends Projectile {
+
+    public void setWarningSound(MissileWarningSound o) {
+        this.warning = o;
+    }
 
     public enum MissileState {
         LAUNCH,    // Вертикальный взлет вверх
@@ -78,46 +86,52 @@ public class GuidedMissile extends Projectile {
     protected void onHit(HitResult result) {
         if (result.getType() == HitResult.Type.ENTITY || result.getType() == HitResult.Type.BLOCK){
             MissileManager.queuePhysicalRemoval(this);
-            NuclearExplosion.createExplosion((ServerLevel) this.level(), Util.Vec3toVec3i(this.position()));
+            ExplosionManager.addExplosion((ServerLevel) this.level(), Util.Vec3toVec3i(this.position()));
             this.discard();
         }
     }
-
+    MissileWarningSound warning = null;
     @Override
     public void tick() {
         super.tick();
-        System.out.println(
+        /*System.out.println(
                 "UUID=" + getUUID() +
                         " entityId=" + getId() +
                         " removed=" + isRemoved() +
                         " tick=" + tickCount
-        );
+        );*/
+        if (soundTick <= 0){
+            this.playSound(
+                    ModSounds.MISSILE_LAUNCH.get(),
+                    0.5f,
+                    1f
+            );
+            soundTick = 20;
+        }else {
+            soundTick--;
+        }
         if (level().isClientSide()) {
             LocalPlayer player = Minecraft.getInstance().player;
 
-            if (player.distanceTo(this) > 100) {
-                if (this.siren == null) {
-                    this.siren = new MissileWarningSound(this);
-                    Minecraft.getInstance().getSoundManager()
-                            .play(siren);
-                }
+            if (player.distanceTo(this) < SIREN_ACTIVATION_DISTANCE) {
+
+                    if (warning == null) {
+                        warning = new MissileWarningSound(this);
+                        Minecraft.getInstance().getSoundManager().play(warning);
+                    }
+
+                    /*Minecraft.getInstance().level.playLocalSound(
+                            Minecraft.getInstance().player.blockPosition(),
+                            ModSounds.MISSILE_WARNING.get(),
+                            SoundSource.MASTER,
+                            10.0f,
+                            1.0f,
+                            false
+                    );*/
+
             }
 
-            if (soundTick <= 0){
-                level().playLocalSound(
-                        getX(),
-                        getY(),
-                        getZ(),
-                        ModSounds.MISSILE_LAUNCH.get(),
-                        getSoundSource(),
-                        10.0F,
-                        1.0F,
-                        false
-                );
-                soundTick = 20;
-            }else {
-                soundTick--;
-            }
+
             return;
         }
 
@@ -156,7 +170,7 @@ public class GuidedMissile extends Projectile {
                     || verticalCollision
                     || minorHorizontalCollision) {
                 MissileManager.queuePhysicalRemoval(this);
-                NuclearExplosion.createExplosion(
+                ExplosionManager.addExplosion(
                         (ServerLevel) level(),
                         Util.Vec3toVec3i(position())
                 );

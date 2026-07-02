@@ -1,17 +1,22 @@
 package com.boruebork.nukemod;
 
+import com.boruebork.nukemod.block.ModBlocks;
+import com.boruebork.nukemod.block.entity.ModBE;
+import com.boruebork.nukemod.block.entity.renderer.GuidedMissileLauncherBER;
 import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.entity.custom.client.GuidedMissileRenderer;
 import com.boruebork.nukemod.entity.custom.client.MushroomEntityRenderer;
 import com.boruebork.nukemod.entity.custom.client.NukeEntityRenderer;
 import com.boruebork.nukemod.explosion.NuclearExplosion;
 import com.boruebork.nukemod.explosion.client.FlashHandler;
-import com.boruebork.nukemod.explosion.client.packet.FlashPacket;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.gui.menu.EnricherScreen;
 import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherScreen;
 import com.boruebork.nukemod.gui.menu.IonizerScreen;
+import com.boruebork.nukemod.sound.ModSounds;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.sounds.SoundSource;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -42,9 +47,11 @@ public class NukeModbyBorueborkClient {
     }
 
 
+
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         // Some client setup code
+
     }
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -67,6 +74,24 @@ public class NukeModbyBorueborkClient {
         event.register(ModMenuTypes.ENRICHER_MENU.get(), EnricherScreen::new);
         event.register(ModMenuTypes.IONIZER_MENU.get(), IonizerScreen::new);
         event.register(ModMenuTypes.GUIDED_MISSILE_MENU.get(), GuidedMissileLauncherScreen::new);
+    }
+    @SubscribeEvent
+    public static void play(ClientTickEvent.Pre event){
+        if (Minecraft.getInstance().player == null) return;
+        /*Minecraft.getInstance().level.playLocalSound(
+                Minecraft.getInstance().player.blockPosition(),
+                ModSounds.NUKE_CLOSE.get(),
+                SoundSource.HOSTILE,
+                1.0f,
+                1.0f,
+                false
+        );*/
+
+    }
+
+    @SubscribeEvent
+    public static void registerBER(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(ModBE.GUIDED_LAUNCHER_BE.get(), GuidedMissileLauncherBER::new);
     }
 
 

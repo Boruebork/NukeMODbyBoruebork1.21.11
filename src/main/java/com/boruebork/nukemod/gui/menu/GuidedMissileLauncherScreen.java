@@ -8,6 +8,7 @@ import com.boruebork.nukemod.entity.custom.client.NukeRenderState;
 import com.boruebork.nukemod.gui.selectionlists.PlayerListUser;
 import com.boruebork.nukemod.gui.selectionlists.PlayerSelectionList;
 import com.boruebork.nukemod.network.packet.LaunchGuidedPacket;
+import com.boruebork.nukemod.network.packet.TargetSelectedPacket;
 import com.boruebork.nukemod.util.Colors;
 import com.boruebork.nukemod.util.VehiclesToItemsConfig;
 import net.minecraft.client.Minecraft;
@@ -66,12 +67,15 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
         this.launch.setWidth(32);
         this.addRenderableWidget(list);
         this.addRenderableWidget(launch);
+        this.list.setSelected(this.list.getEntryFromUUID(menu.blockEntity.getTarget()));
 
         super.init();
     }
     @Override
     public void onPlayerSelected(PlayerInfo info){
         this.playerSelected = info;
+        ClientPacketDistributor.sendToServer(new TargetSelectedPacket(this.menu.blockEntity.getBlockPos(), info.getProfile().id()));
+
     }
     private Entity getRocketInstance() {
         // Если мы уже создали ракету раньше, просто возвращаем её

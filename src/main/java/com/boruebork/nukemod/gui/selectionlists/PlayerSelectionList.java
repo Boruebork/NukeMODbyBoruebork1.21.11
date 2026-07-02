@@ -16,6 +16,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
 
+import java.util.UUID;
+
 public class PlayerSelectionList extends ObjectSelectionList<PlayerSelectionList.PlayerEntry> {
     public GuidedMissileLauncherScreen parent;
     public PlayerSelectionList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
@@ -46,6 +48,15 @@ public class PlayerSelectionList extends ObjectSelectionList<PlayerSelectionList
         }
         return result;
     }
+    public PlayerEntry getEntryFromUUID(UUID id){
+        for (PlayerEntry entry : this.children()){
+            if (entry.info.getProfile().id() == id){
+                return entry;
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public int getRowWidth() {

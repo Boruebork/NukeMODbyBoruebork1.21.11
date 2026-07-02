@@ -54,15 +54,18 @@ public class ModModelProvider extends ModelProvider {
         blockModels.createTrivialCube(ModBlocks.URANIUM_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.RARE_DUST_BLOCK.get());
         //blockModels.createTrivialCube(ModBlocks.ENRICHER.get());
-        blockModels.createTrivialCube(ModBlocks.WATER_IONIZER.get());
-        blockModels.createTrivialCube(ModBlocks.GUIDED_LAUNCHER.get());
+        //blockModels.createTrivialCube(ModBlocks.WATER_IONIZER.get());
+        //blockModels.createTrivialCube(ModBlocks.GUIDED_LAUNCHER.get());
         blockModels.createTrivialCube(ModBlocks.LAUNCHER.get());
 
     }
 
     @Override
     protected Stream<? extends Holder<Block>> getKnownBlocks() {
-        return ModBlocks.BLOCKS.getEntries().stream().filter(blockDeferredHolder -> blockDeferredHolder != ModBlocks.ENRICHER);
+        return ModBlocks.BLOCKS.getEntries().stream()
+                .filter(blockDeferredHolder -> blockDeferredHolder == ModBlocks.ENRICHER)
+                .filter(blockDeferredHolder -> blockDeferredHolder == ModBlocks.WATER_IONIZER)
+                .filter(blockDeferredHolder -> blockDeferredHolder == ModBlocks.GUIDED_LAUNCHER);
     }
 
     @Override

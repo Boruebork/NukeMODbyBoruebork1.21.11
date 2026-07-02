@@ -1,6 +1,9 @@
 package com.boruebork.nukemod.event;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
+import com.boruebork.nukemod.block.entity.GuidedMissileLauncherBE;
+import com.boruebork.nukemod.block.entity.renderer.GuidedlauncherModel;
+import com.boruebork.nukemod.entity.custom.GuidedMissile;
 import com.boruebork.nukemod.entity.custom.client.GuidedModel;
 import com.boruebork.nukemod.entity.custom.client.MushroomModel;
 import com.boruebork.nukemod.entity.custom.client.NukeModel;
@@ -14,5 +17,6 @@ public class CommonEvents {
         event.registerLayerDefinition(NukeModel.LAYER_LOCATION, NukeModel::createBodyLayer);
         event.registerLayerDefinition(MushroomModel.LAYER_LOCATION, MushroomModel::createBodyLayer);
         event.registerLayerDefinition(GuidedModel.LAYER_LOCATION, GuidedModel::createBodyLayer);
+        event.registerLayerDefinition(GuidedlauncherModel.LAYER_LOCATION, GuidedlauncherModel::createBodyLayer);
     }
 }

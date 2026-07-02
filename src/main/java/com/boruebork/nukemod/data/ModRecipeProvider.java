@@ -9,6 +9,7 @@ import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.SimpleCookingRecipeBuilder;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.ItemLike;
@@ -139,17 +140,20 @@ public class ModRecipeProvider extends RecipeProvider {
 
 
         oreSmelting(output, TITANIUM_SMELTABLES, RecipeCategory.MISC, ModItems.TITANIUM_INGOT.get(), 0.25f, 200, "titanium");
+        oreBlasting(output, TITANIUM_SMELTABLES, RecipeCategory.MISC, ModItems.TITANIUM_INGOT.get(), 0.25f, 100, "titanium");
+        oreSmelting(output,TUNGSTEN_SMELTABLES, RecipeCategory.MISC, ModItems.TUNGSTEN_INGOT.get(), 0.25f, 200, "tungsten");
         oreBlasting(output, TUNGSTEN_SMELTABLES, RecipeCategory.MISC, ModItems.TUNGSTEN_INGOT.get(), 0.25f, 100, "tungsten");
         oreSmelting(output, RARE_SMELTABLES, RecipeCategory.MISC, ModItems.RARE_DUST.get(), 0.25f, 200, "rare");
+        oreBlasting(output, RARE_SMELTABLES, RecipeCategory.MISC, ModItems.RARE_DUST.get(), 0.25f, 100, "rare");
+        oreSmelting(output, URANIUM_SMELTABLES, RecipeCategory.MISC, ModItems.URANIUM_DUST.get(), 0.25f, 200, "uranium");
         oreBlasting(output, URANIUM_SMELTABLES, RecipeCategory.MISC, ModItems.URANIUM_DUST.get(), 0.25f, 100, "uranium");
-        shaped(RecipeCategory.MISC, ModItems.IONIZER.get())
-                .pattern("IQI")
-                .pattern("RRR")
-                .pattern("IQI")
-                .define('I', Items.IRON_INGOT)
-                .define('Q', Items.QUARTZ)
-                .define('R', Items.REDSTONE)
-                .unlockedBy("has_redstone", has(Items.REDSTONE)).save(output);
+        shaped(RecipeCategory.MISC, ModItems.DIAMOND_ROD.get(), 3)
+                .pattern("  D")
+                .pattern(" D ")
+                .pattern("D  ")
+                .define('D', Items.DIAMOND)
+                        .unlockedBy("has_diamond", has(Items.DIAMOND))
+                                .save(output);
         shaped(RecipeCategory.MISC, ModItems.IONIZER.get())
                 .pattern("ID")
                 .pattern("II")
@@ -187,6 +191,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 .define('B', ModBlocks.MODERN_ALLOY_BLOCK)
                 .define('T', Items.REDSTONE_TORCH)
                 .unlockedBy("has_electronics", has(ModItems.ELECTRONICS)).save(output);
+
     }
 
     protected void oreSmelting(RecipeOutput recipeOutput, List<ItemLike> pIngredients, RecipeCategory pCategory, ItemLike pResult,
