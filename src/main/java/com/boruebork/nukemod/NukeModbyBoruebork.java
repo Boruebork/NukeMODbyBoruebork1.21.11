@@ -11,11 +11,13 @@ import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.item.ModCreativeModeTabs;
 import com.boruebork.nukemod.item.ModItems;
 import com.boruebork.nukemod.missile.MissileManager;
+import com.boruebork.nukemod.missile.MissileSavedData;
 import com.boruebork.nukemod.sound.ModSounds;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
@@ -87,7 +89,14 @@ public class NukeModbyBoruebork {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         MissileManager.init(event.getServer());
+        new MissileSavedData();
+        MissileSavedData.getInstance().missiles = event.getServer().overworld().getDataStorage().computeIfAbsent(MissileSavedData.ID).missiles;
         ExpandingExplosion.generateShells();
+
+    }
+    @SubscribeEvent
+    public void onServerStopping(ServerStoppingEvent event){
+        MissileSavedData.getInstance().foo();
     }
 
 }

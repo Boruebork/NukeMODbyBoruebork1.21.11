@@ -16,8 +16,8 @@ public class ModCreativeModeTabs {
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, NukeModbyBoruebork.MODID);
 
     public static final Supplier<CreativeModeTab> JUST_A_CREATIVE_MODE_TAB = CREATIVE_MODE_TAB.register("just_a_tab",
-            () -> CreativeModeTab.builder().icon(()-> new ItemStack(ModItems.NEPTUNIUM.get()))
-                    .title(Component.translatable("creativetab.justamod.just_a_tab"))
+            () -> CreativeModeTab.builder().icon(()-> new ItemStack(ModItems.ENRICHED_URANIUM_DUST.get()))
+                    .title(Component.translatable("creativetab.nukemodbyboruebork.just_a_tab"))
                     .displayItems((ItemDisplayParameters, output) ->{
                         output.accept(ModItems.NEPTUNIUM);
                         output.accept(ModItems.RAW_TITANIUM);
@@ -38,32 +38,41 @@ public class ModCreativeModeTabs {
                     .build());
     public static final Supplier<CreativeModeTab> JUST_A_CREATIVE_MODE_TAB_2 = CREATIVE_MODE_TAB.register("just_a_block_tab",
             () -> CreativeModeTab.builder().icon(()-> new ItemStack(ModBlocks.TITANIUM_ORE.get()))
-                    .title(Component.translatable("creativetab.justamod.just_a_bloc_tab"))
+                    .title(Component.translatable("creativetab.nukemodbyboruebork.just_a_bloc_tab"))
                     .displayItems((ItemDisplayParameters, output) ->{
                         output.accept(ModBlocks.TITANIUM_ORE);
                         output.accept(ModBlocks.DEEPSLATE_TITANIUM_ORE);
+                        output.accept(ModBlocks.RAW_TITANIUM_BLOCK);
                         output.accept(ModBlocks.TITANIUM_BLOCK);
+
                         output.accept(ModBlocks.TUNGSTEN_ORE);
                         output.accept(ModBlocks.DEEPSLATE_TUNGSTEN_ORE);
-                        //Tungsten_Block
+                        output.accept(ModBlocks.RAW_TUNGSTEN_BLOCK);
+                        output.accept(ModBlocks.TUNGSTEN_BLOCK);
+
                         output.accept(ModBlocks.URANIUM_ORE);
                         output.accept(ModBlocks.DEEPSLATE_URANIUM_ORE);
                         output.accept(ModBlocks.URANIUM_BLOCK);
                         output.accept(ModBlocks.ENRICHED_URANIUM_BLOCK);
+
                         output.accept(ModBlocks.RARE_ORE);
                         output.accept(ModBlocks.DEEPSLATE_RARE_ORE);
+                        output.accept(ModBlocks.DIRTY_RARE_DUST_BLOCK);
                         output.accept(ModBlocks.RARE_DUST_BLOCK);
+
                         output.accept(ModBlocks.MODERN_ALLOY_BLOCK);
                     })
                     .build());
     static final Supplier<CreativeModeTab> JUST_A_CREATIVE_MODE_TAB_3 = CREATIVE_MODE_TAB.register("machine_tab",
             () -> CreativeModeTab.builder().icon(()-> new ItemStack(ModItems.NUCLEAR_WARHEAD.get()))
-                    .title(Component.translatable("creativetab.justamod.machine_tab"))
+                    .title(Component.translatable("creativetab.nukemodbyboruebork.machine_tab"))
                     .displayItems((ItemDisplayParameters, output) ->{
                         output.accept(ModItems.NUCLEAR_WARHEAD);
                         output.accept(ModBlocks.ENRICHER);
                         output.accept(ModBlocks.WATER_IONIZER);
                         output.accept(ModBlocks.LAUNCHER);
+                        output.accept(ModBlocks.GUIDED_LAUNCHER);
+                        output.accept(ModItems.IONIZER);
                     })
                     .build());
 

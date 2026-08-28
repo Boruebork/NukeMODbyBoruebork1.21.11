@@ -38,7 +38,9 @@ public class ModModelProvider extends ModelProvider {
         itemModels.generateFlatItem(ModItems.IONIZER.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         itemModels.generateFlatItem(ModItems.ELECTRONICS.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         //BLOCKS
-
+        blockModels.createTrivialCube(ModBlocks.RAW_TUNGSTEN_BLOCK.get());
+        blockModels.createTrivialCube(ModBlocks.RAW_TITANIUM_BLOCK.get());
+        //blockModels.createTrivialCube(ModBlocks.TUNGSTEN_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.TITANIUM_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.TITANIUM_ORE.get());
         blockModels.createTrivialCube(ModBlocks.TUNGSTEN_BLOCK.get());
@@ -52,6 +54,7 @@ public class ModModelProvider extends ModelProvider {
         blockModels.createTrivialCube(ModBlocks.ENRICHED_URANIUM_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.MODERN_ALLOY_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.URANIUM_BLOCK.get());
+        blockModels.createTrivialCube(ModBlocks.DIRTY_RARE_DUST_BLOCK.get());
         blockModels.createTrivialCube(ModBlocks.RARE_DUST_BLOCK.get());
         //blockModels.createTrivialCube(ModBlocks.ENRICHER.get());
         //blockModels.createTrivialCube(ModBlocks.WATER_IONIZER.get());

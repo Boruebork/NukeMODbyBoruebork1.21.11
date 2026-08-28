@@ -34,5 +34,9 @@ public class ServerPacketRegistry {
                 TargetSelectedPacket.STREAM_CODEC,
                 ServerPayloadHandler::handleTargetSelected
         );
+        registrar.playToClient(
+                SetTargetForClientBE.TYPE,
+                SetTargetForClientBE.STREAM_CODEC
+        );
     }
 }

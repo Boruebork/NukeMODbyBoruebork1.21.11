@@ -35,7 +35,9 @@ public class EnricherMenu extends AbstractContainerMenu {
 
         this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 0, 54, 34));
         this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 1, 104, 34));
-        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 2 , 79, 33));
+        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 2 , 78, 52));
+        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 3 , 131, 38));
+
 
         addDataSlots(data);
     }
@@ -103,6 +105,10 @@ public class EnricherMenu extends AbstractContainerMenu {
         int maxFuelTime = this.data.get(3);
         if (maxFuelTime == 0) return 0;
         return Math.round((float) (100 * fuelTime) /maxFuelTime);
+    }
+    public int getDropProgress(){
+        System.err.println(getPercentFuelProgress() / 100 * 15);
+        return Math.round(((float) getPercentFuelProgress()) / 100 * 15);
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.boruebork.nukemod.network;
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.network.packet.DiscardNuclearExplPacket;
 import com.boruebork.nukemod.network.packet.NuclearExplosionUpdateClientPacket;
+import com.boruebork.nukemod.network.packet.SetTargetForClientBE;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -18,6 +19,10 @@ public class ClientPacketRegistry {
         event.register(
                 DiscardNuclearExplPacket.TYPE,
                 ClientPayloadHandler::discardNuclearExplosion
+        );
+        event.register(
+                SetTargetForClientBE.TYPE,
+                ClientPayloadHandler::handleSetTargeForBE
         );
     }
 }

@@ -13,6 +13,7 @@ public class IonizerScreen extends AbstractContainerScreen<IonizerMenu> {
             "textures/gui/ionizer/bg.png");
     private static final Identifier PARTICLES = Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID,
             "textures/gui/ionizer/particles.png");
+    private static final Identifier LAZER = Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID, "textures/gui/ionizer/laser.png");
     public IonizerScreen(IonizerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
     }
@@ -28,11 +29,16 @@ public class IonizerScreen extends AbstractContainerScreen<IonizerMenu> {
     }
     private void renderProgressArrow(GuiGraphics guiGraphics, int x, int y) {
         if(menu.isCrafting()) {
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, PARTICLES,x + 73, y + 35, 0, 0, menu.getScaledArrowProgress(), 16, 24, 16);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, PARTICLES,x + 73, y + 35, 0, 0, menu.getScaledArrowProgress(), 15, 20, 15);
         }
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, LAZER,x + 37, y + 39, 0, 0, menu.getScaledFuelArrowProgress(), 5, 15, 5);
         guiGraphics.drawString(this.getFont(), menu.getPercentProgress() + "%", x + 138, y + 15, 0xFF00FF00);
         guiGraphics.drawString(this.getFont(), menu.getPercentIonWeardownProgress() + "%", x + 138, y + 40, 0xFF0000FF);
-        guiGraphics.drawString(this.getFont(), menu.getState(), x + 7, y + 47, 0xFF00FF00);
-        guiGraphics.drawString(this.getFont(), String.valueOf(menu.getAmountOfIonizers()), x + 8, y + 32, 0xFFFFFFFF);
+    }
+    @Override
+    public void render(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
+        super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
+        this.renderTooltip(pGuiGraphics, pMouseX, pMouseY);
+
     }
 }

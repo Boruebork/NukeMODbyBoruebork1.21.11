@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 
 import java.util.*;
 
@@ -19,7 +20,7 @@ public class MissileManager {
     public final MinecraftServer server;
 
     // ONE SOURCE OF TRUTH
-    private final Map<UUID, MissileData> dataMissiles = new HashMap<>();
+    private Map<UUID, MissileData> dataMissiles = new HashMap<>();
     private final Map<UUID, GuidedMissile> physicalMissiles = new HashMap<>();
 
     private final Set<UUID> converting = new HashSet<>();
@@ -35,8 +36,6 @@ public class MissileManager {
     public static void spawnMissile(GuidedMissile missile) {
         INSTANCE.physicalMissiles.put(missile.getUUID(), missile);
         INSTANCE.server.getLevel(Level.OVERWORLD).addFreshEntity(missile);
-        //System.out.println("Physical: " + INSTANCE.physicalMissiles.size());
-        //System.out.println("Data: " + INSTANCE.dataMissiles.size());
     }
 
     // -------------------------
@@ -110,20 +109,11 @@ public class MissileManager {
             ServerLevel level = server.getLevel(Level.OVERWORLD);
 
             boolean ticking = level.isPositionEntityTicking(missile.blockPosition());
-
-            //System.out.println(
-             //       "Missile at " + missile.blockPosition() +
-            //                " ticking=" + ticking
-            //);
-
             if (!ticking) {
                 System.out.println("CONVERTING!");
                 convertToData(missile);
             }
         }
-
-        //System.out.println("Physical: " + physicalMissiles.size());
-        //System.out.println("Data: " + dataMissiles.size());
     }
 
     // -------------------------
@@ -136,5 +126,18 @@ public class MissileManager {
 
     public static void init(MinecraftServer server) {
         INSTANCE = new MissileManager(server);
+        List<GuidedMissile> temp = server.getLevel(Level.OVERWORLD).getEntitiesOfClass(GuidedMissile.class, AABB.INFINITE);
+        for (GuidedMissile missile :  temp){
+            INSTANCE.physicalMissiles.put(missile.getUUID(), missile);
+        }
+
+    }
+
+    public Map<UUID, MissileData> getDataMissiles() {
+        return this.dataMissiles;
+    }
+
+    public void setDataMissiles(Map<UUID, MissileData> uuidMissileDataMap) {
+        this.dataMissiles = uuidMissileDataMap;
     }
 }

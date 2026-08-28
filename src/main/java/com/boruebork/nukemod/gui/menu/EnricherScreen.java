@@ -33,8 +33,7 @@ public class EnricherScreen extends AbstractContainerScreen<EnricherMenu> {
     private void renderProgressArrow(GuiGraphics guiGraphics, int x, int y) {
         if(menu.isCrafting()) {
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ARROW_TEXTURE,x + 73, y + 35, 0, 0, menu.getScaledArrowProgress(), 16, 24, 16);
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, FUEL_ARROW, x +53, y + 52, 0, 0, 67, 21, 67, 21);
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, DROP, x + 79, y + 16, 0, 0, 11, 15, 11, 15);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, DROP, x + 79, y + 14, 0, 0, 11, menu.getDropProgress(), 11, 15);
         }
         guiGraphics.drawString(this.getFont(), menu.getPercentProgress() + "%", x + 137, y + 8, 0xFF00FF00);
         guiGraphics.drawString(this.getFont(), menu.getPercentFuelProgress() + "%", x + 137, y + 26, 0xFFFF5000);

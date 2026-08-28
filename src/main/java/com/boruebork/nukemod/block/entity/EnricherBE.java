@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,7 +27,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jspecify.annotations.Nullable;
 
 public class EnricherBE extends BlockEntity implements MenuProvider {
-    public final ItemStackHandler itemHandler = new ItemStackHandler(3) {
+    public final ItemStackHandler itemHandler = new ItemStackHandler(4) {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
@@ -38,6 +39,7 @@ public class EnricherBE extends BlockEntity implements MenuProvider {
     private static final int INPUT_SLOT = 0;
     private static final int OUTPUT_SLOT = 1;
     private static final int FUEL_SLOT = 2;
+    private static final int BUCKET_SLOT = 3;
 
     protected final ContainerData data;
     private int progress = 0;
@@ -89,6 +91,11 @@ public class EnricherBE extends BlockEntity implements MenuProvider {
                     return;
                 }
             }
+            if (!itemHandler.getStackInSlot(BUCKET_SLOT).isEmpty()){
+                if (itemHandler.getStackInSlot(BUCKET_SLOT).getCount() >= 64){
+                    return;
+                }
+            }
             increaseCraftingProgress();
             fuelTime--;
             setChanged(level, blockPos, blockState);
@@ -105,6 +112,14 @@ public class EnricherBE extends BlockEntity implements MenuProvider {
     private void useFuel() {
         //ItemStack fuel = new ItemStack(ModItems.HEAVY_WATER.get(), )
         itemHandler.extractItem(FUEL_SLOT, 1, false);
+        if (itemHandler.getStackInSlot(BUCKET_SLOT).isEmpty()){
+            itemHandler.setStackInSlot(BUCKET_SLOT, new ItemStack(Items.BUCKET, 1));
+            return;
+        }
+        itemHandler.setStackInSlot(BUCKET_SLOT, new ItemStack(
+                itemHandler.getStackInSlot(BUCKET_SLOT).getItem(),
+                itemHandler.getStackInSlot(BUCKET_SLOT).getCount() + 1
+        ));
         fuelTime = maxFuelTime;
     }
 

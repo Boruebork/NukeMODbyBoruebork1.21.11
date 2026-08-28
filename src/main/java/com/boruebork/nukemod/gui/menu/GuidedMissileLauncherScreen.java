@@ -67,7 +67,7 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
         this.launch.setWidth(32);
         this.addRenderableWidget(list);
         this.addRenderableWidget(launch);
-        this.list.setSelected(this.list.getEntryFromUUID(menu.blockEntity.getTarget()));
+        this.list.setSelected(this.list.getEntryFromUUID(menu.blockEntity.targetPlayer()));
 
         super.init();
     }
@@ -117,6 +117,7 @@ public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedM
     @Override
     protected void containerTick() {
         super.containerTick();
+        //System.out.println(menu.blockEntity.itemHandler.getStackInSlot(0));
         ItemStack stackInSlot = this.menu.getSlot(36).getItem();
         if (!stackInSlot.isEmpty()) {
 

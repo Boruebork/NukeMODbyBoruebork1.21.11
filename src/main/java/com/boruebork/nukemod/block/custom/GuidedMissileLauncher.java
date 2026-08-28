@@ -58,10 +58,6 @@ public class GuidedMissileLauncher extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        /*if(level.isClientSide()) {
-            return null;
-        }*/
-
         return createTickerHelper(blockEntityType, ModBE.GUIDED_LAUNCHER_BE.get(),
                 (level1, blockPos, blockState, blockEntity) -> blockEntity.tick(level1, blockPos, blockState));
     }

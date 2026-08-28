@@ -27,7 +27,8 @@ public class GuidedMissileRenderer extends EntityRenderer<GuidedMissile, GuidedM
     public void submit(GuidedMissileRenderstate renderState, PoseStack poseStack, SubmitNodeCollector nodeCollector, CameraRenderState cameraRenderState) {
         super.submit(renderState, poseStack, nodeCollector, cameraRenderState);
         poseStack.pushPose();
-        poseStack.rotateAround(Axis.XN.rotationDegrees(180), 0 , 0, 0);
+        poseStack.rotateAround(Axis.XN.rotationDegrees(renderState.xRot), 0 , 0, 0);
+        poseStack.rotateAround(Axis.YN.rotationDegrees(renderState.yRot), 0,0,0);
         nodeCollector.submitModel(this.model, renderState, poseStack, this.model.renderType(TEXTURE), renderState.lightCoords, OverlayTexture.NO_OVERLAY, renderState.outlineColor, (ModelFeatureRenderer.CrumblingOverlay) null);
         poseStack.popPose();
     }
@@ -35,5 +36,12 @@ public class GuidedMissileRenderer extends EntityRenderer<GuidedMissile, GuidedM
     @Override
     public GuidedMissileRenderstate createRenderState() {
         return new GuidedMissileRenderstate();
+    }
+
+    @Override
+    public void extractRenderState(GuidedMissile entity, GuidedMissileRenderstate reusedState, float partialTick) {
+        super.extractRenderState(entity, reusedState, partialTick);
+        reusedState.xRot = entity.getXRot(partialTick);
+        reusedState.yRot = entity.getYRot(partialTick);
     }
 }

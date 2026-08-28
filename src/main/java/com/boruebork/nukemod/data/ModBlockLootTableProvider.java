@@ -32,6 +32,9 @@ public class ModBlockLootTableProvider extends BlockLootSubProvider {
         dropSelf(ModBlocks.ENRICHED_URANIUM_BLOCK.get());
         dropSelf(ModBlocks.MODERN_ALLOY_BLOCK.get());
         dropSelf(ModBlocks.ENRICHER.get());
+        dropSelf(ModBlocks.RAW_TITANIUM_BLOCK.get());
+        dropSelf(ModBlocks.RAW_TUNGSTEN_BLOCK.get());
+        dropSelf(ModBlocks.DIRTY_RARE_DUST_BLOCK.get());
         dropSelf(ModBlocks.URANIUM_BLOCK.get());
         dropSelf(ModBlocks.TUNGSTEN_BLOCK.get());
         dropSelf(ModBlocks.LAUNCHER.get());

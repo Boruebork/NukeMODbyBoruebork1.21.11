@@ -27,6 +27,8 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.UUID;
+
 import static com.boruebork.nukemod.explosion.NukeConfig.SIREN_ACTIVATION_DISTANCE;
 
 public class GuidedMissile extends Projectile {
@@ -52,6 +54,7 @@ public class GuidedMissile extends Projectile {
     private Vec3 lastTargetPosition;
     private LockingState state;
     public double speed;
+    private UUID targetUUID;
     private MissileWarningSound siren; //onlu client side
     private int soundTick = 0;
     private static final double maxSpeed = 2;
@@ -65,13 +68,14 @@ public class GuidedMissile extends Projectile {
     }
     public void setTarget(LivingEntity player) {
         this.targetPlayer = player;
+        this.targetUUID = player.getUUID();
+
         this.lastTargetPosition = player.position();
         this.currentState = MissileState.LAUNCH;
         this.state = LockingState.LOCKED;
-        this.direction = new Vec3(0,0,0);
+        this.direction = Vec3.ZERO;
         this.active = false;
-        System.err.println(player);
-        System.err.println("set target!");
+
         this.setSilent(false);
     }
     public void activate(){
@@ -94,62 +98,103 @@ public class GuidedMissile extends Projectile {
     @Override
     public void tick() {
         super.tick();
-        /*System.out.println(
-                "UUID=" + getUUID() +
-                        " entityId=" + getId() +
-                        " removed=" + isRemoved() +
-                        " tick=" + tickCount
-        );*/
-        if (soundTick <= 0){
-            this.playSound(
-                    ModSounds.MISSILE_LAUNCH.get(),
-                    0.5f,
-                    1f
-            );
-            soundTick = 20;
-        }else {
-            soundTick--;
-        }
+
+        // -------------------------
+        // CLIENT
+        // -------------------------
         if (level().isClientSide()) {
-            LocalPlayer player = Minecraft.getInstance().player;
 
-            if (player.distanceTo(this) < SIREN_ACTIVATION_DISTANCE) {
-
-                    if (warning == null) {
-                        warning = new MissileWarningSound(this);
-                        Minecraft.getInstance().getSoundManager().play(warning);
-                    }
-
-                    /*Minecraft.getInstance().level.playLocalSound(
-                            Minecraft.getInstance().player.blockPosition(),
-                            ModSounds.MISSILE_WARNING.get(),
-                            SoundSource.MASTER,
-                            10.0f,
-                            1.0f,
-                            false
-                    );*/
-
+            if (soundTick <= 0) {
+                this.playSound(
+                        ModSounds.MISSILE_LAUNCH.get(),
+                        0.5f,
+                        1f
+                );
+                soundTick = 20;
+            } else {
+                soundTick--;
             }
 
+            LocalPlayer player = Minecraft.getInstance().player;
+
+            if (player != null
+                    && player.distanceTo(this) < SIREN_ACTIVATION_DISTANCE) {
+
+                if (warning == null) {
+                    warning = new MissileWarningSound(this);
+                    Minecraft.getInstance()
+                            .getSoundManager()
+                            .play(warning);
+                }
+            }
 
             return;
         }
 
-        if (!this.active) {
-            if (this.targetPlayer != null) this.active = true;
-            return;
+        // -------------------------
+        // SERVER
+        // -------------------------
 
+        ServerLevel serverLevel = (ServerLevel) level();
+
+        // Resolve target UUID -> actual player.
+        // This is important after loading the entity from disk.
+        if (targetPlayer == null && targetUUID != null) {
+            targetPlayer = serverLevel.getServer()
+                    .getPlayerList()
+                    .getPlayer(targetUUID);
         }
-        // Target validity
+
+        // -------------------------
+        // ACTIVATION
+        // -------------------------
+
+        if (!active) {
+            if (targetPlayer != null) {
+                active = true;
+            } else {
+                // Target hasn't joined/loaded yet.
+                return;
+            }
+        }
+
+        // -------------------------
+        // TARGET VALIDITY
+        // -------------------------
+
         if (targetPlayer == null
                 || !targetPlayer.isAlive()
-                || targetPlayer.level() != this.level()) {
+                || targetPlayer.level() != level()) {
+
             state = LockingState.NA;
+
+        } else if (state == LockingState.LOCKED) {
+
+            // Keep updating the last known position while locked.
+            lastTargetPosition = targetPlayer.position();
         }
 
-        Vec3 targetPos = state == LockingState.LOCKED
-                ? targetPlayer.position()
-                : lastTargetPosition;
+        // -------------------------
+        // DETERMINE TARGET POSITION
+        // -------------------------
+
+        Vec3 targetPos;
+
+        if (state == LockingState.LOCKED && targetPlayer != null) {
+            targetPos = targetPlayer.position();
+        } else {
+            targetPos = lastTargetPosition;
+        }
+
+        // If we don't have any target position at all,
+        // there's nothing meaningful we can do.
+        if (targetPos == null) {
+            return;
+        }
+
+        // -------------------------
+        // GUIDANCE
+        // -------------------------
 
         switch (currentState) {
 
@@ -159,34 +204,61 @@ public class GuidedMissile extends Projectile {
 
             case PREDATOR -> tickTerminal(targetPos);
         }
-        BlockPos nextPos = BlockPos.containing(position().add(direction.scale(speed)));
-        float yaw = (float)Math.toDegrees(Math.atan2(-this.direction.x, this.direction.z));
-        float pitch = (float)Math.toDegrees(Math.asin(-this.direction.y));
-        this.setRot(yaw, pitch);
+
+        // -------------------------
+        // ROTATION
+        // -------------------------
+
+        float yaw = (float) Math.toDegrees(
+                Math.atan2(-direction.x, direction.z)
+        );
+
+        float pitch = (float) Math.toDegrees(
+                Math.asin(-direction.y)
+        );
+
+        setRot(yaw, pitch);
+
+        // -------------------------
+        // MOVEMENT
+        // -------------------------
+
         setDeltaMovement(direction.scale(speed));
-        this.move(MoverType.SELF, this.getDeltaMovement());
-        if (this.explosionSHield <= 0) {
+
+        move(
+                MoverType.SELF,
+                getDeltaMovement()
+        );
+
+        // -------------------------
+        // COLLISION / EXPLOSION
+        // -------------------------
+
+        if (explosionSHield <= 0) {
+
             if (horizontalCollision
                     || verticalCollision
                     || minorHorizontalCollision) {
+
                 MissileManager.queuePhysicalRemoval(this);
+
                 ExplosionManager.addExplosion(
-                        (ServerLevel) level(),
+                        serverLevel,
                         Util.Vec3toVec3i(position())
                 );
-                System.err.println("Discarding!!!");
-                this.discard();
-                System.err.println("Nebelsturm!!!!");
+
+                discard();
                 return;
             }
-        }else{
-            this.explosionSHield--;
-        }
-        if (state == LockingState.LOCKED) {
-            lastTargetPosition = targetPlayer.position();
+
+        } else {
+            explosionSHield--;
         }
 
-        // Smoke
+        // -------------------------
+        // PARTICLES
+        // -------------------------
+
         if (tickCount % 2 == 0) {
             level().addParticle(
                     ParticleTypes.FLAME,
@@ -200,7 +272,6 @@ public class GuidedMissile extends Projectile {
         }
     }
     private void tickLaunch() {
-        //System.err.println("climbing...");
         speed = Math.min(speed + 0.1, maxSpeed);
         Vec3 desiredDirection =
                 direction.add(0, 1.0, 0).normalize();
@@ -212,11 +283,9 @@ public class GuidedMissile extends Projectile {
 
         if (getY() >= cruiseHeight) {
             currentState = MissileState.CRUISE;
-            //System.err.println("missile cruising!");
         }
     }
     private void tickCruise(Vec3 targetPos) {
-        //System.err.println("crusing");
         speed = Math.min(speed + 0.05, maxSpeed);
 
         Vec3 toTarget =
@@ -264,15 +333,83 @@ public class GuidedMissile extends Projectile {
     public boolean hurtServer(ServerLevel serverLevel, DamageSource damageSource, float v) {
         return false;
     }
-
     @Override
-    protected void readAdditionalSaveData(ValueInput valueInput) {
+    protected void addAdditionalSaveData(ValueOutput output) {
+        if (targetUUID != null) {
+            output.putString("TargetUUID", targetUUID.toString());
+        }
 
+        output.putString("MissileState", currentState.name());
+        output.putString(
+                "LockingState",
+                state != null ? state.name() : LockingState.NA.name()
+        );
+
+        output.putDouble("Speed", speed);
+
+        output.putDouble("DirectionX", direction.x);
+        output.putDouble("DirectionY", direction.y);
+        output.putDouble("DirectionZ", direction.z);
+
+        if (lastTargetPosition != null) {
+            output.putDouble("TargetX", lastTargetPosition.x);
+            output.putDouble("TargetY", lastTargetPosition.y);
+            output.putDouble("TargetZ", lastTargetPosition.z);
+        }
+
+        output.putBoolean("Active", active);
+        output.putInt("ExplosionShield", explosionSHield);
     }
 
     @Override
-    protected void addAdditionalSaveData(ValueOutput valueOutput) {
+    protected void readAdditionalSaveData(ValueInput input) {
 
+        input.getString("TargetUUID").ifPresent(s -> {
+            try {
+                this.targetUUID = UUID.fromString(s);
+            } catch (IllegalArgumentException e) {
+                this.targetUUID = null;
+            }
+        });
+
+        this.targetPlayer = null;
+
+        this.currentState = input.getString("MissileState")
+                .map(s -> {
+                    try {
+                        return MissileState.valueOf(s);
+                    } catch (IllegalArgumentException e) {
+                        return MissileState.LAUNCH;
+                    }
+                })
+                .orElse(MissileState.LAUNCH);
+
+        this.state = input.getString("LockingState")
+                .map(s -> {
+                    try {
+                        return LockingState.valueOf(s);
+                    } catch (IllegalArgumentException e) {
+                        return LockingState.NA;
+                    }
+                })
+                .orElse(LockingState.NA);
+
+        this.speed = input.getDoubleOr("Speed", 0.0);
+
+        this.direction = new Vec3(
+                input.getDoubleOr("DirectionX", 0.0),
+                input.getDoubleOr("DirectionY", 0.0),
+                input.getDoubleOr("DirectionZ", 0.0)
+        );
+
+        this.lastTargetPosition = new Vec3(
+                input.getDoubleOr("TargetX", 0.0),
+                input.getDoubleOr("TargetY", 0.0),
+                input.getDoubleOr("TargetZ", 0.0)
+        );
+
+        this.active = input.getBooleanOr("Active", false);
+        this.explosionSHield = input.getIntOr("ExplosionShield", 30);
     }
 
     public Vec3 getDir() {

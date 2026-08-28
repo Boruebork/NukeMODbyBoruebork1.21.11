@@ -19,7 +19,7 @@ public class GuidedMissileLauncherMenu extends AbstractContainerMenu {
     public final GuidedMissileLauncherBE blockEntity;
     private final Level level;
     public GuidedMissileLauncherMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(pContainerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()), new SimpleContainerData(4));
+        this(pContainerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()), new SimpleContainerData(0));
     }
 
     public GuidedMissileLauncherMenu(int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {

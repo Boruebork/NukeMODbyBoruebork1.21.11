@@ -1,13 +1,16 @@
 package com.boruebork.nukemod.block.entity;
 
 import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherMenu;
+import com.boruebork.nukemod.network.packet.SetTargetForClientBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -21,206 +24,194 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jspecify.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class GuidedMissileLauncherBE extends BlockEntity implements MenuProvider {
-    private float targetYaw = 20;
-    private float targetPitch = 30;
 
-    // Rendered angles
-    private float currentYaw;
-    private float currentPitch;
+    // ---------------- TARGET (SERVER AUTHORITY)
+    private UUID targetPlayer;
 
-    // Previous rendered angles (for partial ticks)
-    private float previousYaw;
-    private float previousPitch;
+    private float targetYaw;
+    private float targetPitch;
 
-    // Rotation speeds (degrees per tick)
+    // ---------------- CLIENT RENDER STATE
+    private float prevYaw;
+    private float prevPitch;
+    private float renderYaw;
+    private float renderPitch;
+
     private static final float YAW_SPEED = 3.0F;
     private static final float PITCH_SPEED = 2.0F;
 
-    protected ContainerData data;
+    // ---------------- INVENTORY
     public final ItemStackHandler itemHandler = new ItemStackHandler(1) {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
-            if(!level.isClientSide()) {
-                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            if (level != null && !level.isClientSide()) {
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             }
         }
     };
-    public GuidedMissileLauncherBE(BlockPos pos, BlockState blockState) {
-        super(ModBE.GUIDED_LAUNCHER_BE.get(), pos, blockState);
-        data = new ContainerData() {
-            @Override
-            public int get(int i) {
-                return 0;
-            }
-
-            @Override
-            public void set(int i, int i1) {
-
-            }
-
-            @Override
-            public int getCount() {
-                return 0;
-            }
-        };
+    public UUID targetPlayer() {
+        return targetPlayer;
     }
 
+    // ---------------- MENU DATA
+    private final ContainerData data = new ContainerData() {
+        @Override public int get(int i) { return 0; }
+        @Override public void set(int i, int v) {}
+        @Override public int getCount() { return 0; }
+    };
+
+    public GuidedMissileLauncherBE(BlockPos pos, BlockState state) {
+        super(ModBE.GUIDED_LAUNCHER_BE.get(), pos, state);
+    }
+
+    // ---------------- MENU
     @Override
     public Component getDisplayName() {
-        return Component.literal("Guided Missile Launch menu");
+        return Component.literal("Guided Missile Launcher");
     }
 
     @Override
-    public @Nullable AbstractContainerMenu createMenu(int i, Inventory inventory, Player player) {
-        return new GuidedMissileLauncherMenu(i, inventory, this, this.data);
+    public @Nullable AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
+        return new GuidedMissileLauncherMenu(id, inv, this, data);
     }
+
+    // ---------------- SYNC (NBT SAVE/LOAD)
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider pRegistries) {
-        CompoundTag tag = super.getUpdateTag(pRegistries);
+    protected void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
         tag.putFloat("Yaw", targetYaw);
         tag.putFloat("Pitch", targetPitch);
-        return tag;
     }
 
+    @Override
+    protected void loadAdditional(ValueInput tag) {
+        super.loadAdditional(tag);
+        //temHandler.deserializeNBT(tag.getCompound("Inventory"));
 
-    @Nullable
+        targetYaw = tag.getFloatOr("Yaw", 0.0f);
+        targetPitch = tag.getFloatOr("Pitch", 0.0f);
+    }
+
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
-    protected void saveAdditional(ValueOutput output) {
-        itemHandler.serialize(output);
-        output.putFloat("Yaw", this.targetYaw);
-        output.putFloat("Pitch", this.targetPitch);
-        super.saveAdditional(output);
+    public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("target",targetPlayer != null ? targetPlayer.toString() : "");
+
+        //saveAdditional(tag);
+        return tag;
+    }
+    // ---------------- TARGET SETTER
+    public void setTarget(UUID uuid) {
+        this.targetPlayer = uuid;
+        setChanged();
+        System.err.println("are you stupied?");
+        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
+    // ---------------- SERVER LOGIC
+    private void tickServer() {
+        if (level == null || targetPlayer == null) return;
+
+        Player player = level.getPlayerByUUID(targetPlayer);
+        if (player == null) return;
+
+        Vec3 launcher = Vec3.atCenterOf(worldPosition);
+        Vec3 dir = player.position().subtract(launcher).normalize();
+
+        targetYaw = (float) Math.toDegrees(Math.atan2(dir.x, dir.z));
+
+        double horizontal = Math.sqrt(dir.x * dir.x + dir.z * dir.z);
+        targetPitch = (float) -Math.toDegrees(Math.atan2(dir.y, horizontal));
+
+        setChanged();
+
+        // light sync (not every tick spam)
+        if (level.getGameTime() % 10 == 0) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    // ---------------- CLIENT LOGIC
+    private void tickClient() {
+        if (level == null || targetPlayer == null) return;
+
+        Player player = level.getPlayerByUUID(targetPlayer);
+        if (player == null) return;
+
+        Vec3 launcher = Vec3.atCenterOf(worldPosition);
+        Vec3 dir = player.position().subtract(launcher).normalize();
+
+        targetYaw = (float) -Math.toDegrees(Math.atan2(dir.x, dir.z));
+
+        double horizontal = Math.sqrt(dir.x * dir.x + dir.z * dir.z);
+        targetPitch = (float) -Math.toDegrees(Math.atan2(dir.y, horizontal));
+        
+        prevYaw = renderYaw;
+        prevPitch = renderPitch;
+        System.err.println(targetPlayer);
+        renderYaw = Mth.approachDegrees(renderYaw, targetYaw, YAW_SPEED);
+        renderPitch = Mth.approach(renderPitch, targetPitch, PITCH_SPEED);
+        System.err.println(renderYaw + " " + targetYaw);
+        System.err.println(renderPitch + " " + targetPitch);
+        System.err.println(targetPlayer);
+        System.err.println(renderYaw);
+        System.err.println(renderPitch);
     }
 
     @Override
-    protected void loadAdditional(ValueInput input) {
-        itemHandler.deserialize(input);
-        this.targetYaw = input.getFloatOr("Yaw", 0);
-        this.targetPitch = input.getFloatOr("Pitch", 0);
-        super.loadAdditional(input);
-    }
-    public void tick(Level level1, BlockPos blockPos, BlockState blockState) {
-        tickServer();
-        setChanged();
-        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-    }
-    private UUID targetPlayer;
-    public void setTarget(UUID target) {
-        this.targetPlayer = target;
-        calculateYawPitch();
-        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-    }
+    public void onDataPacket(Connection net, ValueInput valueInput) {
+        super.onDataPacket(net, valueInput);
+        System.err.println("data packet");
+        String s = valueInput.getString("target").get();
 
-    public UUID getTarget() {
-        return this.targetPlayer;
-    }
-    private void calculateYawPitch(){
-        assert this.level != null;
-        Player target = this.level.getPlayerByUUID(this.targetPlayer);
-        if (target == null){
-            return;
-        }
-        Vec3 launcherPos = Vec3.atCenterOf(worldPosition);
-        Vec3 targetPos = target.position();
-
-        Vec3 direction = targetPos.subtract(launcherPos).normalize();
-
-        this.targetYaw  = (float) Math.toDegrees(Math.atan2(-direction.x, direction.z));
-        System.err.println("Set yaw pitch");
-        double horizontal = Math.sqrt(direction.x * direction.x + direction.z * direction.z);
-        targetPitch = (float) -Math.toDegrees(Math.atan2(direction.y, horizontal));
-    }
-    private float lastSyncedPitch;
-    private float lastSyncedYaw;
-    private void calculateTargetAngles() {
-
-        Vec3 launcher = Vec3.atCenterOf(worldPosition);
-
-        Vec3 targetPos = this.level.getPlayerByUUID(this.targetPlayer).position();
-
-        Vec3 direction = targetPos.subtract(launcher).normalize();
-
-        targetYaw = (float) Math.toDegrees(
-                Math.atan2(direction.x, direction.z)
-        );
-
-        double horizontal =
-                Math.sqrt(direction.x * direction.x +
-                        direction.z * direction.z);
-
-        targetPitch = (float)-Math.toDegrees(
-                Math.atan2(direction.y, horizontal)
-        );
-    }
-    public void tickServer() {
-        if (!level.isClientSide()){
-            if (Math.abs(Mth.wrapDegrees(targetYaw - lastSyncedYaw)) > 1.0F
-                    || Math.abs(targetPitch - lastSyncedPitch) > 1.0F) {
-
-                setChanged();
-                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-
-
-                lastSyncedYaw = targetYaw;
-                lastSyncedPitch = targetPitch;
-                System.err.println("synced upd");
-
+        if (!s.isEmpty()) {
+            try {
+                System.err.println("cool!");
+                targetPlayer = UUID.fromString(s);
+            } catch (IllegalArgumentException e) {
+                System.err.println(s);
+                System.err.println("exception");
+                targetPlayer = null;
             }
+        } else {
+            System.err.println("else");
+            targetPlayer = null;
         }
-        if (level.isClientSide()){
-            System.err.println(lastSyncedPitch);
-            System.err.println(lastSyncedYaw);
-        }
-        // Save previous values
-        previousYaw = currentYaw;
-        previousPitch = currentPitch;
-
-        // Compute desired angles if a target exists
-        if (targetPlayer != null) {
-            calculateTargetAngles();
-        }
-
-        // Rotate smoothly
-        currentYaw = Mth.approachDegrees(
-                currentYaw,
-                targetYaw,
-                YAW_SPEED
-        );
-
-        currentPitch = Mth.approach(
-                currentPitch,
-                targetPitch,
-                PITCH_SPEED
-        );
-    }
-    public float getRotatorAngle(float partialTick) {
-
-        return Mth.lerp(
-                partialTick,
-                previousYaw,
-                currentYaw
-        );
-
     }
 
-    public float getHeadRot(float partialTick) {
-
-        return Mth.lerp(
-                partialTick,
-                previousPitch,
-                currentPitch
-        );
+    // ---------------- MAIN TICK
+    public void tick(Level level, BlockPos pos, BlockState state) {
+        if (level.isClientSide()) {
+            tickClient();
+        } else {
+            tickServer();
+        }
     }
 
+    // ---------------- RENDER ACCESS
+    public float getYaw(float partialTick) {
+        return Mth.lerp(partialTick, prevYaw, renderYaw);
+    }
+
+    public float getPitch(float partialTick) {
+        return Mth.lerp(partialTick, prevPitch, renderPitch);
+    }
+
+    public void setClientTarget(UUID id) {
+        this.targetPlayer = id;
+    }
 }

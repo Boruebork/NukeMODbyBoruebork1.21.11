@@ -50,21 +50,34 @@ public class ModRecipeProvider extends RecipeProvider {
         List<ItemLike> URANIUM_SMELTABLES = List.of(
                 ModBlocks.URANIUM_ORE, ModBlocks.DEEPSLATE_URANIUM_ORE);
 
-        shaped(RecipeCategory.MISC, ModBlocks.TITANIUM_BLOCK.get())
+        shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.TITANIUM_BLOCK.get())
                 .pattern("BBB")
                 .pattern("BBB")
                 .pattern("BBB")
                 .define('B', ModItems.TITANIUM_INGOT.get())
                 .unlockedBy("has_titanium", has(ModItems.TITANIUM_INGOT)).save(output);
+        shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.RAW_TITANIUM_BLOCK.get())
+                .pattern("BBB")
+                .pattern("BBB")
+                .pattern("BBB")
+                .define('B', ModItems.RAW_TITANIUM.get())
+                .unlockedBy("has_raw_titanium", has(ModItems.RAW_TITANIUM)).save(output);
 
         shapeless(RecipeCategory.MISC, ModItems.TITANIUM_INGOT.get(), 9)
                 .requires(ModBlocks.TITANIUM_BLOCK)
                 .unlockedBy("has_tungsten_block", has(ModBlocks.TUNGSTEN_BLOCK)).save(output);
 
+        shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.RAW_TUNGSTEN_BLOCK.get())
+                .pattern("BBB")
+                .pattern("BBB")
+                .pattern("BBB")
+                .define('B', ModItems.RAW_TUNGSTEN.get())
+                .unlockedBy("has_raw_tungsten", has(ModItems.RAW_TUNGSTEN)).save(output);
 
 
 
-        shaped(RecipeCategory.MISC, ModBlocks.TUNGSTEN_BLOCK.get())
+
+        shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.TUNGSTEN_BLOCK.get())
                 .pattern("BBB")
                 .pattern("BBB")
                 .pattern("BBB")
@@ -77,13 +90,19 @@ public class ModRecipeProvider extends RecipeProvider {
 
 
 
+        shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.DIRTY_RARE_DUST_BLOCK.get())
+                .pattern("BBB")
+                .pattern("BBB")
+                .pattern("BBB")
+                .define('B', ModItems.DIRTY_RARE_DUST.get())
+                .unlockedBy("has_dirty_rare_dust", has(ModItems.DIRTY_RARE_DUST)).save(output);
 
-        shaped(RecipeCategory.MISC, ModBlocks.RARE_DUST_BLOCK.get())
+        shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.RARE_DUST_BLOCK.get())
                 .pattern("BBB")
                 .pattern("BBB")
                 .pattern("BBB")
                 .define('B', ModItems.RARE_DUST.get())
-                .unlockedBy("has_titanium", has(ModItems.RARE_DUST)).save(output);
+                .unlockedBy("has_rare_dust", has(ModItems.RARE_DUST)).save(output);
 
         shapeless(RecipeCategory.MISC, ModItems.RARE_DUST.get(), 9)
                 .requires(ModBlocks.RARE_DUST_BLOCK)
@@ -102,6 +121,20 @@ public class ModRecipeProvider extends RecipeProvider {
                 .requires(ModBlocks.URANIUM_BLOCK)
                 .unlockedBy("has_tungsten_block", has(ModBlocks.URANIUM_BLOCK)).save(output);
 
+
+        shapeless(RecipeCategory.MISC, ModItems.RAW_TUNGSTEN.get(), 9)
+                .requires(ModBlocks.RAW_TUNGSTEN_BLOCK)
+                .unlockedBy("has_raw_tungsten_block", has(ModBlocks.RAW_TUNGSTEN_BLOCK)).save(output);
+        shapeless(RecipeCategory.MISC, ModItems.MODERN_ALLOY.get(), 9)
+                .requires(ModBlocks.MODERN_ALLOY_BLOCK)
+                .unlockedBy("has_modern_alloy_block", has(ModBlocks.MODERN_ALLOY_BLOCK)).save(output, "modern_alloy_from_block");
+
+        shapeless(RecipeCategory.MISC, ModItems.RAW_TITANIUM.get(), 9)
+                .requires(ModBlocks.RAW_TITANIUM_BLOCK)
+                .unlockedBy("has_raw_titanium_block", has(ModBlocks.RAW_TITANIUM_BLOCK)).save(output);
+        shapeless(RecipeCategory.MISC, ModItems.DIRTY_RARE_DUST.get(), 9)
+                .requires(ModBlocks.DIRTY_RARE_DUST_BLOCK)
+                .unlockedBy("has_dirty_rare_dust_block", has(ModBlocks.DIRTY_RARE_DUST_BLOCK)).save(output);
 
 
         shaped(RecipeCategory.MISC, ModBlocks.ENRICHED_URANIUM_BLOCK.get())

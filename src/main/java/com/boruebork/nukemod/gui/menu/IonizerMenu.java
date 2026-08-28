@@ -33,16 +33,24 @@ public class IonizerMenu extends AbstractContainerMenu {
 
         this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 0, 54, 34));
         this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 1, 101, 34));
+        this.addSlot(new SlotItemHandler(blockEntity.itemHandler, 2, 19, 34));
 
         addDataSlots(data);
     }
     public boolean isCrafting() {
         return data.get(0) > 0;
     }
+    public int getScaledFuelArrowProgress() {
+        int progress = this.data.get(2);
+        int maxProgress = this.data.get(3);
+        int arrowPixelSize = 15;
+
+        return maxProgress != 0 && progress != 0 ? progress * arrowPixelSize / maxProgress : 0;
+    }
     public int getScaledArrowProgress() {
         int progress = this.data.get(0);
         int maxProgress = this.data.get(1);
-        int arrowPixelSize = 24;
+        int arrowPixelSize = 20;
 
         return maxProgress != 0 && progress != 0 ? progress * arrowPixelSize / maxProgress : 0;
     }

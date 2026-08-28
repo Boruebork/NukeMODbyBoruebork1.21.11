@@ -13,6 +13,8 @@ import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.gui.menu.EnricherScreen;
 import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherScreen;
 import com.boruebork.nukemod.gui.menu.IonizerScreen;
+import com.boruebork.nukemod.gui.menu.launcher.LauncherMenu;
+import com.boruebork.nukemod.gui.menu.launcher.LauncherScreen;
 import com.boruebork.nukemod.sound.ModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderers;
@@ -74,6 +76,7 @@ public class NukeModbyBorueborkClient {
         event.register(ModMenuTypes.ENRICHER_MENU.get(), EnricherScreen::new);
         event.register(ModMenuTypes.IONIZER_MENU.get(), IonizerScreen::new);
         event.register(ModMenuTypes.GUIDED_MISSILE_MENU.get(), GuidedMissileLauncherScreen::new);
+        event.register(ModMenuTypes.LAUNCHER_MENU.get(), LauncherScreen::new);
     }
     @SubscribeEvent
     public static void play(ClientTickEvent.Pre event){

@@ -38,6 +38,7 @@ public class WaterIonizerBE extends BlockEntity implements MenuProvider {
     };
     private static final int INPUT_SLOT = 0;
     private static final int OUTPUT_SLOT = 1;
+    private static final int FUEL_SLOT = 2;
 
     protected final ContainerData data;
     private int progress = 0;
@@ -56,7 +57,6 @@ public class WaterIonizerBE extends BlockEntity implements MenuProvider {
                     case 1 -> WaterIonizerBE.this.maxProgress;
                     case 2 -> WaterIonizerBE.this.ionzierWeardown;
                     case 3 -> WaterIonizerBE.this.maxIonizerWeardown;
-                    case 4 -> WaterIonizerBE.this.numOfIonizers;
                     default -> 0;
                 };
             }
@@ -68,13 +68,12 @@ public class WaterIonizerBE extends BlockEntity implements MenuProvider {
                     case 1: WaterIonizerBE.this.maxProgress = value; break;
                     case 2: WaterIonizerBE.this.ionzierWeardown = value; break;
                     case 3: WaterIonizerBE.this.maxIonizerWeardown = value; break;
-                    case 4: WaterIonizerBE.this.numOfIonizers = value; break;
                 }
             }
 
             @Override
             public int getCount() {
-                return 5;
+                return 4;
             }
         };
     }
@@ -82,22 +81,26 @@ public class WaterIonizerBE extends BlockEntity implements MenuProvider {
     public void tick(Level level, BlockPos pos, BlockState state) {
         if (level.isClientSide()) return;
 
-        if (!hasRecipe()) {
+        if (!hasRecipe() || !itemHandler.getStackInSlot(FUEL_SLOT).is(ModItems.IONIZER)) {
             resetProgress();
             return;
         }
 
         // No active ionizer → try to start one
-        if (ionzierWeardown <= 0) {
-            if (!useIonizer()) {
-                resetProgress();
-                return;
-            }
-        }
-
         // Work
         progress++;
         ionzierWeardown--;
+        if (ionzierWeardown <= 0){
+            ItemStack temp = itemHandler.getStackInSlot(FUEL_SLOT);
+            if (temp.getCount() == 1){
+                itemHandler.setStackInSlot(FUEL_SLOT, ItemStack.EMPTY);
+            }
+            itemHandler.setStackInSlot(FUEL_SLOT, new ItemStack(
+                    temp.getItem(),
+                    temp.getCount() - 1
+            ));
+            ionzierWeardown = maxIonizerWeardown;
+        }
 
         if (progress >= maxProgress) {
             craftItem();
@@ -105,15 +108,6 @@ public class WaterIonizerBE extends BlockEntity implements MenuProvider {
         }
 
         setChanged(level, pos, state);
-    }
-
-    private boolean useIonizer() {
-        if (numOfIonizers > 0) {
-            numOfIonizers--;
-            ionzierWeardown = maxIonizerWeardown;
-            return true;
-        }
-        return false;
     }
 
     private void craftItem() {

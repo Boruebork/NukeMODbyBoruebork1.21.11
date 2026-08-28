@@ -28,24 +28,31 @@ public class ModBLockTagProvider extends BlockTagsProvider {
                 .add(ModBlocks.DEEPSLATE_RARE_ORE.get())
                 .add(ModBlocks.RARE_ORE.get())
                 .add(ModBlocks.RARE_DUST_BLOCK.get())
-                .add(ModBlocks.URANIUM_BLOCK.get());
-
-
+                .add(ModBlocks.URANIUM_BLOCK.get())
+                .add(ModBlocks.RAW_TITANIUM_BLOCK.get())
+                .add(ModBlocks.RAW_TUNGSTEN_BLOCK.get())
+                .add(ModBlocks.DIRTY_RARE_DUST_BLOCK.get())
+                .add(ModBlocks.TUNGSTEN_BLOCK.get())
+                .add(ModBlocks.MODERN_ALLOY_BLOCK.get());
         tag(BlockTags.NEEDS_IRON_TOOL)
                 .add(ModBlocks.TITANIUM_BLOCK.get())
+                .add(ModBlocks.TUNGSTEN_BLOCK.get())
                 .add(ModBlocks.TITANIUM_ORE.get())
                 .add(ModBlocks.TUNGSTEN_ORE.get())
                 .add(ModBlocks.DEEPSLATE_TITANIUM_ORE.get())
-                .add(ModBlocks.URANIUM_BLOCK.get())
-                .add(ModBlocks.RARE_DUST_BLOCK.get())
+                .add(ModBlocks.MODERN_ALLOY_BLOCK.get())
+                .add(ModBlocks.RAW_TITANIUM_BLOCK.get())
+                .add(ModBlocks.RAW_TUNGSTEN_BLOCK.get())
                 .add(ModBlocks.DEEPSLATE_TUNGSTEN_ORE.get());
         tag(BlockTags.NEEDS_DIAMOND_TOOL)
                 .add(ModBlocks.DEEPSLATE_URANIUM_ORE.get())
                 .add(ModBlocks.URANIUM_ORE.get())
                 .add(ModBlocks.DEEPSLATE_RARE_ORE.get())
                 .add(ModBlocks.ENRICHED_URANIUM_BLOCK.get())
-                .add(ModBlocks.RARE_ORE.get());
-
+                .add(ModBlocks.RARE_ORE.get())
+                .add(ModBlocks.DIRTY_RARE_DUST_BLOCK.get())
+                .add(ModBlocks.URANIUM_BLOCK.get())
+                .add(ModBlocks.RARE_DUST_BLOCK.get());
 
     }
 }

@@ -8,6 +8,7 @@ import com.boruebork.nukemod.block.custom.WaterIonizerBlock;
 import com.boruebork.nukemod.item.ModItems;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DropExperienceBlock;
 import net.minecraft.world.level.block.SoundType;
@@ -28,6 +29,9 @@ public class ModBlocks {
     public static final DeferredBlock<Block> TITANIUM_ORE = registerBlock("titanium_ore",
             (properties) -> new Block(properties
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.STONE)));
+    public static final DeferredBlock<Block> RAW_TITANIUM_BLOCK = registerBlock("raw_titanium_block",
+            (properties -> new Block(properties
+                    .strength(3f).requiresCorrectToolForDrops().sound(SoundType.ANCIENT_DEBRIS))));
     public static final DeferredBlock<Block> TUNGSTEN_BLOCK = registerBlock("tungsten_block",
             (properties) -> new Block(properties
                     .strength(3f).requiresCorrectToolForDrops().sound(SoundType.NETHERITE_BLOCK)));
@@ -74,9 +78,12 @@ public class ModBlocks {
             (properties) -> new LauncherBlock(properties.strength(3f).sound(SoundType.NETHERITE_BLOCK).noOcclusion()));
     public static final DeferredBlock<GuidedMissileLauncher> GUIDED_LAUNCHER = registerBlock("guided_launcher",
             (properties) -> new GuidedMissileLauncher(properties.strength(3f).sound(SoundType.NETHERITE_BLOCK).noOcclusion()));
-
-
-
+    public static final DeferredBlock<Block> RAW_TUNGSTEN_BLOCK = registerBlock("raw_tungsten_block",
+            (properties -> new Block(properties
+                    .strength(3f).requiresCorrectToolForDrops().sound(SoundType.ANCIENT_DEBRIS))));
+    public static final DeferredBlock<Block> DIRTY_RARE_DUST_BLOCK = registerBlock("dirty_rare_dust_block",
+            (properties -> new Block(properties
+                    .strength(3f).requiresCorrectToolForDrops().sound(SoundType.RESIN))));
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Function<BlockBehaviour.Properties, T> function) {
         DeferredBlock<T> toReturn = BLOCKS.registerBlock(name, function);
         registerBlockItem(name, toReturn);

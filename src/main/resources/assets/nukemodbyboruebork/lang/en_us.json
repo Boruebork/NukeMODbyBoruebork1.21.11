@@ -1,6 +1,6 @@
 {
   "item.nukemodbyboruebork.titanium": "Titanium Ingot",
-  "item.nukemodbyboruebork.raw_titanium": "Raw Titamium",
+  "item.nukemodbyboruebork.raw_titanium": "Raw Titanium",
   "item.nukemodbyboruebork.neptunium": "Neptunium Ingot",
   "item.nukemodbyboruebork.diamond_rod": "Diamond Rod",
   "item.nukemodbyboruebork.tungsten_ingot": "Tungsten Ingot",
@@ -18,8 +18,11 @@
 
 
   "block.nukemodbyboruebork.titanium_block": "Titanium Block",
+  "block.nukemodbyboruebork.tungsten_block": "Tungsten Block",
   "block.nukemodbyboruebork.titanium_ore": "Titanium Ore",
   "block.nukemodbyboruebork.tungsten_ore": "Tungsten Ore",
+  "block.nukemodbyboruebork.raw_titanium_block" : "Raw Titanium Block",
+  "block.nukemodbyboruebork.raw_tungsten_block" : "Raw Tungsten Block",
   "block.nukemodbyboruebork.deepslate_titanium_ore": "Deepslate Titanium Ore",
   "block.nukemodbyboruebork.deepslate_tungsten_ore": "Deepslate Tungsten Ore",
   "block.nukemodbyboruebork.deepslate_uranium_ore": "Deepslate Uranium Ore",
@@ -31,17 +34,26 @@
   "block.nukemodbyboruebork.modern_alloy_block": "Modern alloy block",
   "block.nukemodbyboruebork.uranium_block": "Uranium block",
   "block.nukemodbyboruebork.rare_dust_block": "Rare dust block",
+  "block.nukemodbyboruebork.water_ionizer": "Water Ionizer",
+  "block.nukemodbyboruebork.launcher": "Ballistic Missile Launcher",
+  "block.nukemodbyboruebork.guided_launcher": "Guided Cruise Missile Launcher",
+  "block.nukemodbyboruebork.dirty_rare_dust_block" : "Dirty Rare Dust Block",
 
-  "creativetab.nukemodbyboruebork.just_a_tab": "Just a MOD Items",
-  "creativetab.nukemodbyboruebork.just_a_bloc_tab": "Just a MOD BLocks",
-  "creativetab.nukemodbyboruebork.machine_tab": "Machines",
+
+  "creativetab.nukemodbyboruebork.just_a_tab": "NukeMOD by Boruebork mod Items",
+  "creativetab.nukemodbyboruebork.just_a_bloc_tab": "NukeMOD by Boruebork mod BLocks",
+  "creativetab.nukemodbyboruebork.machine_tab": "NukeMOD by Boruebork mod Tech",
 
 
   "advancements.nukemodbyboruebork.root.title": "Just a MOD",
   "advancements.nukemodbyboruebork.root.description": "Or is it?",
 
-  "entity.nukemodbyboruebork.nuke": "Nuke",
+  "entity.nukemodbyboruebork.nuke": "Nuclear Ballistic Missile",
+  "entity.nukemodbyboruebork.guided_misssile": "Guided Nuclear Cruise Missile",
 
   "sounds.nukemodbyboruebork.missile_sound" : "Missile Whoosh",
-  "sounds.nukemodbyboruebork.missile_warning" : "Missile Warning"
+  "sounds.nukemodbyboruebork.missile_warning" : "Missile Warning",
+  "sounds.nukemodbyboruebork.flash" : "Flash",
+  "sounds.nukemodbyboruebork.close_nuke" : "Close Nuclear Explosion",
+  "sounds.nukemodbyboruebork.distant_nuke" : "Distant Nuclear Explosion"
 }
