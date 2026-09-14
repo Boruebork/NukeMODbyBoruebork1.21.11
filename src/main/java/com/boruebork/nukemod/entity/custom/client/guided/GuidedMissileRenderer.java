@@ -1,12 +1,10 @@
-package com.boruebork.nukemod.entity.custom.client;
+package com.boruebork.nukemod.entity.custom.client.guided;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.GuidedMissile;
-import com.boruebork.nukemod.entity.custom.NukeEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;

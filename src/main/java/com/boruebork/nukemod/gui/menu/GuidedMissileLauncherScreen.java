@@ -4,7 +4,6 @@ import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.entity.custom.GuidedMissile;
 import com.boruebork.nukemod.entity.custom.NukeEntity;
-import com.boruebork.nukemod.entity.custom.client.NukeRenderState;
 import com.boruebork.nukemod.gui.selectionlists.PlayerListUser;
 import com.boruebork.nukemod.gui.selectionlists.PlayerSelectionList;
 import com.boruebork.nukemod.network.packet.LaunchGuidedPacket;
@@ -15,7 +14,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -26,7 +24,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -35,8 +32,6 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.registries.DeferredItem;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-
-import java.util.function.Supplier;
 
 public class GuidedMissileLauncherScreen extends AbstractContainerScreen<GuidedMissileLauncherMenu> implements PlayerListUser {
     private PlayerSelectionList list;

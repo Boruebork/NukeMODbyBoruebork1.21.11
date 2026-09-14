@@ -1,4 +1,4 @@
-package com.boruebork.nukemod.entity.custom.client;
+package com.boruebork.nukemod.entity.custom.client.guided;
 
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 

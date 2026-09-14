@@ -1,40 +1,30 @@
 package com.boruebork.nukemod;
 
-import com.boruebork.nukemod.block.ModBlocks;
 import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.block.entity.renderer.GuidedMissileLauncherBER;
 import com.boruebork.nukemod.entity.ModEntities;
-import com.boruebork.nukemod.entity.custom.client.GuidedMissileRenderer;
-import com.boruebork.nukemod.entity.custom.client.MushroomEntityRenderer;
-import com.boruebork.nukemod.entity.custom.client.NukeEntityRenderer;
-import com.boruebork.nukemod.explosion.NuclearExplosion;
-import com.boruebork.nukemod.explosion.client.FlashHandler;
+import com.boruebork.nukemod.entity.custom.client.fpv.FPVRenderer;
+import com.boruebork.nukemod.entity.custom.client.guided.GuidedMissileRenderer;
+import com.boruebork.nukemod.entity.custom.client.mushroom.MushroomEntityRenderer;
+import com.boruebork.nukemod.entity.custom.client.nuke.NukeEntityRenderer;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.gui.menu.EnricherScreen;
 import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherScreen;
 import com.boruebork.nukemod.gui.menu.IonizerScreen;
-import com.boruebork.nukemod.gui.menu.launcher.LauncherMenu;
 import com.boruebork.nukemod.gui.menu.launcher.LauncherScreen;
-import com.boruebork.nukemod.sound.ModSounds;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.sounds.SoundSource;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
-import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
-
-import java.util.ArrayList;
-import java.util.List;
+import net.neoforged.neoforge.common.util.Lazy;
+import org.lwjgl.glfw.GLFW;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = NukeModbyBoruebork.MODID, dist = Dist.CLIENT)
@@ -69,6 +59,10 @@ public class NukeModbyBorueborkClient {
                 ModEntities.MUSHROOM_ENTITY.get(),
                 MushroomEntityRenderer::new
         );
+        event.registerEntityRenderer(
+                ModEntities.BAYRAKTAR_ENTITY.get(),
+                FPVRenderer::new
+        );
     }
 
     @SubscribeEvent
@@ -79,22 +73,22 @@ public class NukeModbyBorueborkClient {
         event.register(ModMenuTypes.LAUNCHER_MENU.get(), LauncherScreen::new);
     }
     @SubscribeEvent
-    public static void play(ClientTickEvent.Pre event){
-        if (Minecraft.getInstance().player == null) return;
-        /*Minecraft.getInstance().level.playLocalSound(
-                Minecraft.getInstance().player.blockPosition(),
-                ModSounds.NUKE_CLOSE.get(),
-                SoundSource.HOSTILE,
-                1.0f,
-                1.0f,
-                false
-        );*/
-
-    }
-
-    @SubscribeEvent
     public static void registerBER(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBE.GUIDED_LAUNCHER_BE.get(), GuidedMissileLauncherBER::new);
+    }
+    // In some physical client only class
+
+    // Key mapping is lazily initialized so it doesn't exist until it is registered
+    public static final Lazy<KeyMapping> EXAMPLE_MAPPING = Lazy.of(() -> new KeyMapping(
+            "key.nukemodbyboruebork.exitdrone", // Will be localized using this translation key
+            InputConstants.Type.KEYSYM, // Default mapping is on the keyboard
+            GLFW.GLFW_KEY_X, // Default key is P
+            KeyMapping.Category.MISC // Mapping will be in the misc category
+    ));
+
+    @SubscribeEvent // on the mod event bus only on the physical client
+    public static void registerBindings(RegisterKeyMappingsEvent event) {
+        event.register(EXAMPLE_MAPPING.get());
     }
 
 

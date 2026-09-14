@@ -14,6 +14,7 @@ import com.boruebork.nukemod.missile.MissileManager;
 import com.boruebork.nukemod.missile.MissileSavedData;
 import com.boruebork.nukemod.sound.ModSounds;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -43,6 +44,7 @@ public class NukeModbyBoruebork {
     public static Identifier identifierFromPath(String path){
         return Identifier.fromNamespaceAndPath(MODID, path);
     }
+    public static MinecraftServer server;
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
     //public static List<ExpandingExplosion> explosions = new ArrayList<>();
@@ -88,6 +90,7 @@ public class NukeModbyBoruebork {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
+        server = event.getServer();
         MissileManager.init(event.getServer());
         new MissileSavedData();
         MissileSavedData.getInstance().missiles = event.getServer().overworld().getDataStorage().computeIfAbsent(MissileSavedData.ID).missiles;

@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.network;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
+import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.network.packet.*;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -37,6 +38,21 @@ public class ServerPacketRegistry {
         registrar.playToClient(
                 SetTargetForClientBE.TYPE,
                 SetTargetForClientBE.STREAM_CODEC
+        );
+        registrar.playToServer(
+                DroneInputPayload.TYPE,
+                DroneInputPayload.STREAM_CODEC,
+                DroneManager::updateDronePos
+        );
+
+        registrar.playToServer(
+                ExitDronePacket.TYPE,
+                ExitDronePacket.STREAM_CODEC,
+                DroneManager::exitDrone
+        );
+        registrar.playToClient(
+                NotifyClientDroneExit.TYPE,
+                NotifyClientDroneExit.STREAM_CODEC
         );
     }
 }

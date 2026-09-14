@@ -1,4 +1,4 @@
-package com.boruebork.nukemod.entity.custom.client;
+package com.boruebork.nukemod.entity.custom.client.nuke;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import net.minecraft.client.model.EntityModel;

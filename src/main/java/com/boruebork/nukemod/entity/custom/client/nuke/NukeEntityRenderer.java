@@ -1,10 +1,8 @@
-package com.boruebork.nukemod.entity.custom.client;
+package com.boruebork.nukemod.entity.custom.client.nuke;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.NukeEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.model.Model;
-import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
