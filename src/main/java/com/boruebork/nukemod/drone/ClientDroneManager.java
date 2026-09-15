@@ -13,7 +13,10 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+import static com.boruebork.nukemod.entity.custom.Drone.CONTROLLER_DATA;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientDroneManager {
@@ -53,6 +56,7 @@ public class ClientDroneManager {
     }
 
     public static void exitDrone(NotifyClientDroneExit notifyClientDroneExit, IPayloadContext context) {
+        System.err.println("client exit");
         PilotingClientState.drone = null;
         Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
     }
@@ -97,12 +101,21 @@ public class ClientDroneManager {
 
         event.setYaw(PilotingClientState.yRot);
         event.setPitch(PilotingClientState.xRot);
-        //PilotingClientState.drone.updateLookClientSide(PilotingClientState.xRot, PilotingClientState.yRot);
+        PilotingClientState.drone.updateLookClientSide(PilotingClientState.xRot, PilotingClientState.yRot);
 
     }
     @SubscribeEvent
     public static void onClientTickPre(ClientTickEvent.Pre event) {
+        System.err.println(PilotingClientState.drone);
+        if (Minecraft.getInstance().level == null) {
+            PilotingClientState.drone = null;
+            return;
+        }
         if (PilotingClientState.drone == null) return;
+        if (PilotingClientState.drone.getEntityData().get(CONTROLLER_DATA).isEmpty()){
+            PilotingClientState.drone = null;
+            Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
+        }
         PilotingClientState.movementYRot = PilotingClientState.yRot;
     }
 

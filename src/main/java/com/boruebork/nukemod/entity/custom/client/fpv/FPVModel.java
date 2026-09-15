@@ -4,7 +4,6 @@ package com.boruebork.nukemod.entity.custom.client.fpv;// Made with Blockbench 5
 
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.Drone;
 import com.boruebork.nukemod.entity.custom.client.drone.DroneRenderState;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
@@ -12,31 +11,31 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.util.Mth;
 
-public class FPVModel extends EntityModel<DroneRenderState> {
+public class FPVModel extends EntityModel<FPVRenderState> {
 	// This layer location should be baked with EntityRendererProvider.Context in the entity renderer and passed into this model's constructor
 public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID, "fpvdrone"), "main");
 	private final ModelPart bone;
-	private final ModelPart bone2;
+	private final ModelPart left_back_rotor;
 	private final ModelPart bone7;
-	private final ModelPart bone8;
+	private final ModelPart left_front_rotor;
 	private final ModelPart bone3;
-	private final ModelPart bone4;
+	private final ModelPart right_back_rotor;
 	private final ModelPart bone5;
-	private final ModelPart bone6;
+	private final ModelPart right_front_rotor;
 	private final ModelPart bb_main;
 
 	public FPVModel(ModelPart root) {
         super(root);
         this.bone = root.getChild("bone");
-		this.bone2 = this.bone.getChild("bone2");
+		this.left_back_rotor = this.bone.getChild("bone2");
 		this.bone7 = root.getChild("bone7");
-		this.bone8 = this.bone7.getChild("bone8");
+		this.left_front_rotor = this.bone7.getChild("bone8");
 		this.bone3 = root.getChild("bone3");
-		this.bone4 = this.bone3.getChild("bone4");
+		this.right_back_rotor = this.bone3.getChild("bone4");
 		this.bone5 = root.getChild("bone5");
-		this.bone6 = this.bone5.getChild("bone6");
+		this.right_front_rotor = this.bone5.getChild("bone6");
 		this.bb_main = root.getChild("bb_main");
 	}
 
@@ -92,5 +91,13 @@ public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(I
 		.texOffs(18, 44).addBox(-0.5F, -8.0F, -15.25F, 1.0F, 1.0F, 6.0F, new CubeDeformation(0.0F)), PartPose.offset(0.0F, 24.0F, 0.0F));
 
 		return LayerDefinition.create(meshdefinition, 64, 64);
+	}
+	@Override
+	public void setupAnim(FPVRenderState renderState) {
+		super.setupAnim(renderState);
+		this.left_front_rotor.yRot  = renderState.rotorAngle * Mth.DEG_TO_RAD;
+		this.right_front_rotor.yRot = -renderState.rotorAngle * Mth.DEG_TO_RAD; // opposite spin looks better
+		this.left_back_rotor.yRot   = renderState.rotorAngle * Mth.DEG_TO_RAD;
+		this.right_back_rotor.yRot  = -renderState.rotorAngle * Mth.DEG_TO_RAD;
 	}
 }

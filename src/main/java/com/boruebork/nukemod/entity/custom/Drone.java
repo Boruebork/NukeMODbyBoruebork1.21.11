@@ -45,7 +45,7 @@ public abstract class Drone extends Entity {
         super.tick();
         if (level().isClientSide()) {
             if (!this.entityData.get(CONTROLLER_DATA).isEmpty()) {
-                if (ClientDroneManager.PilotingClientState.drone != this) {
+                if (ClientDroneManager.PilotingClientState.drone == null) {
                     ClientDroneManager.PilotingClientState.drone = this;
                     ClientDroneManager.PilotingClientState.yRot = this.getYRot();
                     ClientDroneManager.PilotingClientState.xRot = this.getXRot();
@@ -64,6 +64,8 @@ public abstract class Drone extends Entity {
                 }
             }
         }else{
+            System.out.println(isBeingPiloted());
+            System.out.println();
             if (this.tickNum == 0){
                 this.move(MoverType.SELF, new Vec3(0, 0.5, 0));
             }
@@ -111,7 +113,8 @@ public abstract class Drone extends Entity {
         this.entityData.set(CONTROLLER_DATA, "");
         if (player == null) return;
         DroneManager.getInstance().playerToDrone.remove(player.getUUID());
-        PacketDistributor.sendToPlayer((ServerPlayer) player, new NotifyClientDroneExit());
+        System.err.println(player.getGameProfile().name());
+        //PacketDistributor.sendToPlayer((ServerPlayer) player, new NotifyClientDroneExit());
 
     }
 
@@ -125,6 +128,12 @@ public abstract class Drone extends Entity {
         if (!level().isClientSide()){
             this.yRotO = this.getYRot();
             this.setYRot(yRot);
+        }else {
+           /* this.yRotO = ClientDroneManager.PilotingClientState.yRotO;
+            this.xRotO = ClientDroneManager.PilotingClientState.xRotO;
+            this.setYRot(ClientDroneManager.PilotingClientState.xRot);
+            this.setXRot(ClientDroneManager.PilotingClientState.yRot);*/
+
         }
         float vert = 0;
         if (up)   vert = 0.1f;
@@ -153,11 +162,14 @@ public abstract class Drone extends Entity {
     }// Client-side, called every FRAME (e.g. from ClientTickEvent or a mouse-move hook),
     // NOT from Entity#tick()
     public void updateLookClientSide(double mouseYaw, double mousePitch) {
-        /*if (ClientDroneManager.PilotingClientState.drone != this) return;
+        if (ClientDroneManager.PilotingClientState.drone != this) return;
 
         this.yRotO = this.getYRot();
         this.xRotO = this.getXRot();
-        this.setYRot((float) mouseYaw);
-        this.setXRot((float) mousePitch);*/
+        this.setYRot((float) mousePitch);
+        this.setXRot((float) mouseYaw);
+    }
+    public boolean isBeingPiloted(){
+        return !this.entityData.get(CONTROLLER_DATA).isEmpty();
     }
 }

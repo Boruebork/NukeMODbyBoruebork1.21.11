@@ -30,7 +30,9 @@ public class MouseHandlerMixin {
     @Inject(method = "turnPlayer", at = @At("HEAD"), cancellable = true)
     private void redirectToDrone(double movementTime, CallbackInfo ci) {
         Drone drone = ClientDroneManager.PilotingClientState.drone;
+        System.err.println("Drone" + drone);
         if (drone != null) {
+            System.err.println("Hello????");
             CalculatePlayerTurnEvent event = ClientHooks.getTurnPlayerValues(
                     (Double) this.minecraft.options.sensitivity().get(), this.minecraft.options.smoothCamera);
             double d2 = event.getMouseSensitivity() * 0.6F + 0.2F;

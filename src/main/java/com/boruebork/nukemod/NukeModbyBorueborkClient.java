@@ -60,7 +60,7 @@ public class NukeModbyBorueborkClient {
                 MushroomEntityRenderer::new
         );
         event.registerEntityRenderer(
-                ModEntities.BAYRAKTAR_ENTITY.get(),
+                ModEntities.FPV_DRONE.get(),
                 FPVRenderer::new
         );
     }
@@ -79,7 +79,7 @@ public class NukeModbyBorueborkClient {
     // In some physical client only class
 
     // Key mapping is lazily initialized so it doesn't exist until it is registered
-    public static final Lazy<KeyMapping> EXAMPLE_MAPPING = Lazy.of(() -> new KeyMapping(
+    public static final Lazy<KeyMapping> EXIT_DRONE_KEY = Lazy.of(() -> new KeyMapping(
             "key.nukemodbyboruebork.exitdrone", // Will be localized using this translation key
             InputConstants.Type.KEYSYM, // Default mapping is on the keyboard
             GLFW.GLFW_KEY_X, // Default key is P
@@ -88,7 +88,7 @@ public class NukeModbyBorueborkClient {
 
     @SubscribeEvent // on the mod event bus only on the physical client
     public static void registerBindings(RegisterKeyMappingsEvent event) {
-        event.register(EXAMPLE_MAPPING.get());
+        event.register(EXIT_DRONE_KEY.get());
     }
 
 
