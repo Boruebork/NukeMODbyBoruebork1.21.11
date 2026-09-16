@@ -1,12 +1,8 @@
 package com.boruebork.nukemod.entity.custom.client.fpv;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.entity.custom.Drone;
 import com.boruebork.nukemod.entity.custom.FPVDrone;
-import com.boruebork.nukemod.entity.custom.client.drone.DroneRenderState;
 import com.boruebork.nukemod.entity.custom.client.drone.DroneRenderer;
-import com.boruebork.nukemod.entity.custom.client.guided.GuidedModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -26,8 +22,8 @@ public class FPVRenderer extends DroneRenderer<FPVDrone, FPVRenderState, FPVMode
         super.submit(renderState, poseStack, nodeCollector, cameraRenderState);
         this.model.setupAnim(renderState);
         poseStack.translate(0, 1.6, 0);
-        poseStack.rotateAround(Axis.YN.rotationDegrees(renderState.yRot), 0,-1.5f,0);
-        poseStack.rotateAround(Axis.XN.rotationDegrees(-renderState.xRot), 0 , -1.5f, 0);
+        poseStack.rotateAround(Axis.YN.rotationDegrees(renderState.yRot), 0, -1.6f+renderState.eyeHeight, 0);
+        poseStack.rotateAround(Axis.XN.rotationDegrees(-renderState.xRot), 0 , -1.6f+renderState.eyeHeight, 0);
         renderModel(this.model, renderState, poseStack, nodeCollector, cameraRenderState);
     }
 

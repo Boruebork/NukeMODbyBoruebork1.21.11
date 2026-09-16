@@ -1,7 +1,7 @@
 package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.Drone;
+import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.ExitDronePacket;
 import net.minecraft.world.entity.Entity;
@@ -32,7 +32,7 @@ public class DroneManager {
         if (event.getEntity() instanceof Player player){
             if (getInstance().playerToDrone.containsKey(player.getUUID())){
                 Entity ent = player.level().getEntity(getInstance().playerToDrone.get(player.getUUID()));
-                if (ent instanceof Drone drone){
+                if (ent instanceof AbstractFPVDrone drone){
                     drone.stopOperating();
                 }
             }
@@ -44,19 +44,19 @@ public class DroneManager {
         Entity ent = NukeModbyBoruebork.server.getLevel(Level.OVERWORLD).getEntity(droneInputPayload.droneId());
         if (ent != null)
         {
-            if (ent instanceof Drone drone){
+            if (ent instanceof AbstractFPVDrone drone){
                 drone.updatePosRot(droneInputPayload);
             }
         }
     }
-    public void addEntry(Player player, Drone drone){
+    public void addEntry(Player player, AbstractFPVDrone drone){
         playerToDrone.put(player.getUUID(), drone.getUUID());
     }
     public static void exitDrone(ExitDronePacket exitDronePacket, IPayloadContext context) {
         UUID droneId = DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
         Entity ent = context.player().level().getEntity(droneId);
         if (ent == null) return;
-        if (ent instanceof Drone drone){
+        if (ent instanceof AbstractFPVDrone drone){
             drone.stopOperating();
         }
     }

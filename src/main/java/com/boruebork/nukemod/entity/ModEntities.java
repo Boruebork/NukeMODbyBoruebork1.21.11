@@ -24,7 +24,7 @@ public class ModEntities {
     public static ResourceKey<EntityType<?>> NUKE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("nuke"));
     public static ResourceKey<EntityType<?>> GUIDED_MISSILE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("guided_missile"));
     public static ResourceKey<EntityType<?>> MUSHROOM_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("mushroom_key"));
-    public static ResourceKey<EntityType<?>> BAYRAKTAR_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("fpv"));
+    public static ResourceKey<EntityType<?>> FPV_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("fpv"));
 
     public static final Supplier<EntityType<NukeEntity>> NUKE =
             ENTITY_TYPES.register("nuke", () -> EntityType.Builder.of(NukeEntity::new,
@@ -42,7 +42,7 @@ public class ModEntities {
             ENTITY_TYPES.register("fpv", () -> EntityType.Builder.of(FPVDrone::new,
                             MobCategory.MISC)
                     .sized(1, 0.5f).clientTrackingRange(64)   // blocks at which the server keeps sending updates
-                    .updateInterval(1) .build(BAYRAKTAR_KEY));
+                    .updateInterval(1).build(FPV_KEY));
 
 
 

@@ -25,7 +25,6 @@ public class PlayerSelectionList extends ObjectSelectionList<PlayerSelectionList
     }
     public void generateEntries(){
         for (PlayerInfo info : this.minecraft.getConnection().getOnlinePlayers().stream().toList()){
-            System.err.println(info.getProfile().name());
             this.addEntry(new PlayerEntry(info));
         }
     }

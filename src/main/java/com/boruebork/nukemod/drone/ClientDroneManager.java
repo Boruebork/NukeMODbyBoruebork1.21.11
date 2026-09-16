@@ -1,11 +1,12 @@
 package com.boruebork.nukemod.drone;
 
-import com.boruebork.nukemod.entity.custom.Drone;
+import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.NotifyClientDroneExit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -13,10 +14,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import static com.boruebork.nukemod.entity.custom.Drone.CONTROLLER_DATA;
+import static com.boruebork.nukemod.entity.custom.AbstractFPVDrone.CONTROLLER_DATA;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientDroneManager {
@@ -56,13 +56,12 @@ public class ClientDroneManager {
     }
 
     public static void exitDrone(NotifyClientDroneExit notifyClientDroneExit, IPayloadContext context) {
-        System.err.println("client exit");
         PilotingClientState.drone = null;
         Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
     }
 
     public static class PilotingClientState{
-        public static Drone drone;
+        public static AbstractFPVDrone drone;
         public static float x;
         public static float z;
         public static boolean up;
@@ -106,13 +105,13 @@ public class ClientDroneManager {
     }
     @SubscribeEvent
     public static void onClientTickPre(ClientTickEvent.Pre event) {
-        System.err.println(PilotingClientState.drone);
+
         if (Minecraft.getInstance().level == null) {
             PilotingClientState.drone = null;
             return;
         }
         if (PilotingClientState.drone == null) return;
-        if (PilotingClientState.drone.getEntityData().get(CONTROLLER_DATA).isEmpty()){
+        if (PilotingClientState.drone.getEntityData().get(CONTROLLER_DATA).isEmpty() || PilotingClientState.drone.getRemovalReason() == Entity.RemovalReason.DISCARDED){
             PilotingClientState.drone = null;
             Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
         }

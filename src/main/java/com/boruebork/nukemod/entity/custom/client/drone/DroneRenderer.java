@@ -1,20 +1,19 @@
 package com.boruebork.nukemod.entity.custom.client.drone;
 
 import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.entity.custom.Drone;
+import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
-public abstract class DroneRenderer <T extends Drone, S extends DroneRenderState, M extends EntityModel<? super S>> extends EntityRenderer<T, S> {
+public abstract class DroneRenderer <T extends AbstractFPVDrone, S extends DroneRenderState, M extends EntityModel<? super S>> extends EntityRenderer<T, S> {
     public abstract Identifier getTexture();
     protected DroneRenderer(EntityRendererProvider.Context context) {
         super(context);
