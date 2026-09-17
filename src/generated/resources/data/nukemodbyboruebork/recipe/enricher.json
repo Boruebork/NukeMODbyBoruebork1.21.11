@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": "minecraft:dispenser",
+    "I": "minecraft:iron_ingot",
+    "O": "nukemodbyboruebork:ionizer",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "RDR",
+    "IOI",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "nukemodbyboruebork:enricher"
+  }
+}

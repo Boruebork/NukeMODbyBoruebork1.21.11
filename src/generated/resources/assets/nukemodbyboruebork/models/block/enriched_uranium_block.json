@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "nukemodbyboruebork:block/enriched_uranium_block"
+  }
+}

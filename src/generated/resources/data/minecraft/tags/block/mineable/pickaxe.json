@@ -1,0 +1,21 @@
+{
+  "values": [
+    "nukemodbyboruebork:titanium_block",
+    "nukemodbyboruebork:titanium_ore",
+    "nukemodbyboruebork:enriched_uranium_block",
+    "nukemodbyboruebork:tungsten_ore",
+    "nukemodbyboruebork:deepslate_uranium_ore",
+    "nukemodbyboruebork:deepslate_titanium_ore",
+    "nukemodbyboruebork:deepslate_tungsten_ore",
+    "nukemodbyboruebork:uranium_ore",
+    "nukemodbyboruebork:deepslate_rare_ore",
+    "nukemodbyboruebork:rare_ore",
+    "nukemodbyboruebork:rare_dust_block",
+    "nukemodbyboruebork:uranium_block",
+    "nukemodbyboruebork:raw_titanium_block",
+    "nukemodbyboruebork:raw_tungsten_block",
+    "nukemodbyboruebork:dirty_rare_dust_block",
+    "nukemodbyboruebork:tungsten_block",
+    "nukemodbyboruebork:modern_alloy_block"
+  ]
+}

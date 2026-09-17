@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "nukemodbyboruebork:item/enriched_uranium_dust"
+  }
+}

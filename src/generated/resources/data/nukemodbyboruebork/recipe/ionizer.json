@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": "nukemodbyboruebork:diamond_rod",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "ID",
+    "II"
+  ],
+  "result": {
+    "count": 1,
+    "id": "nukemodbyboruebork:ionizer"
+  }
+}

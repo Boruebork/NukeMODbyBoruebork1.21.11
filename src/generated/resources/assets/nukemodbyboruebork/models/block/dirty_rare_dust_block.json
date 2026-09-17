@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "nukemodbyboruebork:block/dirty_rare_dust_block"
+  }
+}

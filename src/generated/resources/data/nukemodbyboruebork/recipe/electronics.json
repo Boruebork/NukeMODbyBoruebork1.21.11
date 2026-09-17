@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "nukemodbyboruebork:rare_dust",
+    "minecraft:redstone",
+    "nukemodbyboruebork:uranium_dust"
+  ],
+  "result": {
+    "count": 1,
+    "id": "nukemodbyboruebork:electronics"
+  }
+}

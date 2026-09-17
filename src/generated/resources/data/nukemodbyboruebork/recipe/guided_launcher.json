@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "B": "nukemodbyboruebork:modern_alloy_block",
+    "E": "nukemodbyboruebork:electronics",
+    "I": "minecraft:iron_block",
+    "T": "minecraft:redstone_torch"
+  },
+  "pattern": [
+    "III",
+    "EEE",
+    "TBT"
+  ],
+  "result": {
+    "count": 1,
+    "id": "nukemodbyboruebork:guided_launcher"
+  }
+}

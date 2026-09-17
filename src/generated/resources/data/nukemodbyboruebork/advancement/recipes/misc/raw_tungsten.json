@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_raw_tungsten_block": {
+      "conditions": {
+        "items": [
+          {
+            "items": "nukemodbyboruebork:raw_tungsten_block"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "nukemodbyboruebork:raw_tungsten"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_raw_tungsten_block"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "nukemodbyboruebork:raw_tungsten"
+    ]
+  }
+}

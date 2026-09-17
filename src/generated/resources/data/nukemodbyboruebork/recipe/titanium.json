@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "nukemodbyboruebork:titanium_block"
+  ],
+  "result": {
+    "count": 9,
+    "id": "nukemodbyboruebork:titanium"
+  }
+}

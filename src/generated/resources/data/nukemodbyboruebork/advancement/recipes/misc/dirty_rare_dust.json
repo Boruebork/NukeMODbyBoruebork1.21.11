@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_dirty_rare_dust_block": {
+      "conditions": {
+        "items": [
+          {
+            "items": "nukemodbyboruebork:dirty_rare_dust_block"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "nukemodbyboruebork:dirty_rare_dust"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_dirty_rare_dust_block"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "nukemodbyboruebork:dirty_rare_dust"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "nukemodbyboruebork:tungsten_ingot"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_titanium_block": {
+      "conditions": {
+        "items": [
+          {
+            "items": "nukemodbyboruebork:tungsten_block"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_titanium_block"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "nukemodbyboruebork:tungsten_ingot"
+    ]
+  }
+}
