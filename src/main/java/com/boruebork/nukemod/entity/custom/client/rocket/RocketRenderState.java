@@ -1,8 +1,8 @@
-package com.boruebork.nukemod.entity.custom.client.drone;
+package com.boruebork.nukemod.entity.custom.client.rocket;
 
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 
-public class DroneRenderState extends EntityRenderState {
+public class RocketRenderState extends EntityRenderState {
     public float yRot;
     public float xRot;
 }

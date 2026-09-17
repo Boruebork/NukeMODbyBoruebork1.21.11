@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
+import com.boruebork.nukemod.entity.custom.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.NotifyClientDroneExit;
 import net.minecraft.client.Minecraft;
@@ -11,10 +12,12 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.lwjgl.glfw.GLFW;
 
 import static com.boruebork.nukemod.entity.custom.AbstractFPVDrone.CONTROLLER_DATA;
 
@@ -71,6 +74,7 @@ public class ClientDroneManager {
         public static float yRot;
         public static float yRotO;
         public static float movementYRot;
+        public static int currentPayloadMode = 0;
 
         public static void turn(double yR, double xR) {
             float f = (float)xR * 0.15F;
@@ -117,6 +121,21 @@ public class ClientDroneManager {
         }
         PilotingClientState.movementYRot = PilotingClientState.yRot;
     }
+    @SubscribeEvent
+    public static void onKeyInput(InputEvent.Key event) {
+        if (PilotingClientState.drone == null) return;
+        if (event.getAction() != GLFW.GLFW_PRESS) {
+            return;
+        }
 
+        int key = event.getKey();
+
+        if (key >= GLFW.GLFW_KEY_1 && key <= GLFW.GLFW_KEY_9) {
+            int number = key - GLFW.GLFW_KEY_1 + 1;
+            if (PilotingClientState.drone instanceof AbstractFPVProjectileLaunchingDrone pDrone){
+                pDrone.setMode(number - 1);
+            }
+        }
+    }
 
 }

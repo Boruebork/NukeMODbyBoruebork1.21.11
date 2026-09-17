@@ -1,7 +1,7 @@
 package com.boruebork.nukemod.entity.custom.client.fpv;
 
-import com.boruebork.nukemod.entity.custom.client.drone.DroneRenderState;
+import com.boruebork.nukemod.entity.custom.client.drone.AbstractFPVDroneRenderState;
 
-public class FPVRenderState extends DroneRenderState {
-    public float rotorAngle;
+public class FPVRenderState extends AbstractFPVDroneRenderState {
+
 }

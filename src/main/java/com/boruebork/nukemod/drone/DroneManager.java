@@ -2,8 +2,11 @@ package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
+import com.boruebork.nukemod.entity.custom.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
+import com.boruebork.nukemod.network.packet.DroneLaucnhProjectilePayload;
 import com.boruebork.nukemod.network.packet.ExitDronePacket;
+import com.boruebork.nukemod.network.packet.SetProjectileModePayload;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -58,6 +61,22 @@ public class DroneManager {
         if (ent == null) return;
         if (ent instanceof AbstractFPVDrone drone){
             drone.stopOperating();
+        }
+    }
+
+    public static void setWeaponsMode(SetProjectileModePayload payload, IPayloadContext context) {
+        UUID id =  DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
+        Entity ent = context.player().level().getEntity(id);
+        if (ent instanceof AbstractFPVProjectileLaunchingDrone drone){
+            drone.setServerMode(payload.mode());
+        }
+    }
+
+    public static void launchDroneProjectile(DroneLaucnhProjectilePayload $, IPayloadContext context) {
+        UUID id =  DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
+        Entity ent = context.player().level().getEntity(id);
+        if (ent instanceof AbstractFPVProjectileLaunchingDrone drone){
+            drone.tryFireWeapon();
         }
     }
 }

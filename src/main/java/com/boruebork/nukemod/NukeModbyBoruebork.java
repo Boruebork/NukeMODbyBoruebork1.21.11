@@ -2,11 +2,9 @@ package com.boruebork.nukemod;
 
 import com.boruebork.nukemod.block.ModBlocks;
 import com.boruebork.nukemod.block.entity.ModBE;
-import com.boruebork.nukemod.block.entity.renderer.GuidedMissileLauncherBER;
+import com.boruebork.nukemod.entity.NukeMODEntityDataSerializers;
 import com.boruebork.nukemod.entity.ModEntities;
-import com.boruebork.nukemod.entity.custom.GuidedMissile;
 import com.boruebork.nukemod.explosion.ExpandingExplosion;
-import com.boruebork.nukemod.explosion.NuclearExplosion;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.item.ModCreativeModeTabs;
 import com.boruebork.nukemod.item.ModItems;
@@ -15,9 +13,6 @@ import com.boruebork.nukemod.missile.MissileSavedData;
 import com.boruebork.nukemod.sound.ModSounds;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
@@ -32,9 +27,6 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
-
-import java.util.ArrayList;
-import java.util.List;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(NukeModbyBoruebork.MODID)
@@ -62,6 +54,7 @@ public class NukeModbyBoruebork {
         ModBE.register(modEventBus);
         ModMenuTypes.register(modEventBus);
         ModSounds.register(modEventBus);
+        NukeMODEntityDataSerializers.register(modEventBus);
 
 
         // Register ourselves for server and other game events we are interested in.

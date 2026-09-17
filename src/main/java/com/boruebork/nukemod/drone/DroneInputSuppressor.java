@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBorueborkClient;
+import com.boruebork.nukemod.network.packet.DroneLaucnhProjectilePayload;
 import com.boruebork.nukemod.network.packet.ExitDronePacket;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -31,6 +32,11 @@ public class DroneInputSuppressor {
         if (NukeModbyBorueborkClient.EXIT_DRONE_KEY.get().consumeClick()){
             if (ClientDroneManager.PilotingClientState.drone != null){
                 ClientPacketDistributor.sendToServer(new ExitDronePacket());
+            }
+        }
+        if (NukeModbyBorueborkClient.DRONE_ATTACK_MAPPING.get().consumeClick()){
+            if (ClientDroneManager.PilotingClientState.drone != null){
+                ClientPacketDistributor.sendToServer(new DroneLaucnhProjectilePayload());
             }
         }
     }

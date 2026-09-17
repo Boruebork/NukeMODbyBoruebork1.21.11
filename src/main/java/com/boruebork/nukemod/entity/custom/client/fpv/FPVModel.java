@@ -4,7 +4,6 @@ package com.boruebork.nukemod.entity.custom.client.fpv;// Made with Blockbench 5
 
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.client.drone.DroneRenderState;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;

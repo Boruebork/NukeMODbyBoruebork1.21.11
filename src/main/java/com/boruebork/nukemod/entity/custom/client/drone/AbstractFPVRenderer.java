@@ -13,9 +13,9 @@ import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
-public abstract class DroneRenderer <T extends AbstractFPVDrone, S extends DroneRenderState, M extends EntityModel<? super S>> extends EntityRenderer<T, S> {
+public abstract class AbstractFPVRenderer<T extends AbstractFPVDrone, S extends AbstractFPVDroneRenderState, M extends EntityModel<? super S>> extends EntityRenderer<T, S> {
     public abstract Identifier getTexture();
-    protected DroneRenderer(EntityRendererProvider.Context context) {
+    protected AbstractFPVRenderer(EntityRendererProvider.Context context) {
         super(context);
     }
 
@@ -47,5 +47,6 @@ public abstract class DroneRenderer <T extends AbstractFPVDrone, S extends Drone
             reusedState.xRot = entity.getXRot(partialTick);
             reusedState.yRot = entity.getYRot(partialTick);
         }
+        reusedState.rotorAngle = entity.getRotorAngle() + entity.getRotorSpeed() * partialTick;
     }
 }

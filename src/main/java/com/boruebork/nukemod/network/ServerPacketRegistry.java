@@ -54,5 +54,15 @@ public class ServerPacketRegistry {
                 NotifyClientDroneExit.TYPE,
                 NotifyClientDroneExit.STREAM_CODEC
         );
+        registrar.playToServer(
+                SetProjectileModePayload.TYPE,
+                SetProjectileModePayload.STREAM_CODEC,
+                DroneManager::setWeaponsMode
+        );
+        registrar.playToServer(
+                DroneLaucnhProjectilePayload.TYPE,
+                DroneLaucnhProjectilePayload.STREAM_CODEC,
+                DroneManager::launchDroneProjectile
+        );
     }
 }

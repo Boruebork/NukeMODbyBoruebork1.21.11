@@ -27,6 +27,8 @@ import static net.minecraft.world.entity.player.Player.MAX_HEALTH;
 public abstract class AbstractFPVDrone extends Entity {
     private UUID controllerId;
     private int tickNum = 0;
+    private float rotorSpeed = 0f;
+    private float rotorAngle = 0f;
     public static final EntityDataAccessor<String> CONTROLLER_DATA =
             SynchedEntityData.defineId(
                     // The class of the entity.
@@ -81,6 +83,10 @@ public abstract class AbstractFPVDrone extends Entity {
             tickNum++;
             //System.err.println("Server pos: " +  this.getOnPos());
         }
+        float targetSpeed = isBeingPiloted() ? 45f : 0f; // degrees/tick at full spin
+        // ease toward target so rotors spin up/down instead of snapping
+        this.rotorSpeed += (targetSpeed - this.rotorSpeed) * 0.1f;
+        this.rotorAngle = (this.rotorAngle + this.rotorSpeed) % 360f;
     }
 
     @Override
@@ -157,9 +163,6 @@ public abstract class AbstractFPVDrone extends Entity {
             this.yRotO = this.getYRot();
             this.setYRot(yRot);
         }
-
-        float speed = 0.3f;
-
         // build forward direction from BOTH yaw and pitch, so looking down
         // while moving forward naturally dives — same math as Entity#getViewVector / elytra flight
         float yawRad = this.getYRot() * Mth.DEG_TO_RAD;
@@ -175,13 +178,13 @@ public abstract class AbstractFPVDrone extends Entity {
         // strafe stays horizontal-only — sideways movement shouldn't dive/climb from pitch
         Vec3 strafeVec = new Vec3(cosYaw, 0, -sinYaw);
 
-        Vec3 localMove = forwardVec.scale(forward * speed).add(strafeVec.scale(strafe * speed));
+        Vec3 localMove = forwardVec.scale(forward * getHorizontalSpeedModifier()).add(strafeVec.scale(strafe * getHorizontalSpeedModifier()));
 
         // up/down is a separate boost added on top of whatever pitch-driven motion already gave us
         float vert = 0;
         if (up)   vert = 0.1f;
         if (down) vert = -0.1f;
-        localMove = localMove.add(0, vert, 0);
+        localMove = localMove.add(0, vert * getVerticalSpeedModifier(), 0);
 
         this.setDeltaMovement(localMove);
         this.move(MoverType.PLAYER, this.getDeltaMovement());
@@ -197,7 +200,7 @@ public abstract class AbstractFPVDrone extends Entity {
     }
 
     private void explode() {
-        this.level().explode(this, this.getX(), this.getY(), this.getZ(), 4f, Level.ExplosionInteraction.TNT);
+        this.level().explode(this, this.getX(), this.getY(), this.getZ(), getOnHitExplosionRadius(), Level.ExplosionInteraction.TNT);
         this.stopOperating();
         this.discard();
     }// Client-side, called every FRAME (e.g. from ClientTickEvent or a mouse-move hook),
@@ -212,8 +215,14 @@ public abstract class AbstractFPVDrone extends Entity {
     }
     public boolean isBeingPiloted(){
         return !this.entityData.get(CONTROLLER_DATA).isEmpty();
+    }public float getRotorAngle() {
+        return rotorAngle;
+    }
+    public float getRotorSpeed() {
+        return rotorSpeed;
     }
     protected abstract float getMaxHealth();
     protected abstract float getVerticalSpeedModifier();
     protected abstract float getHorizontalSpeedModifier();
+    protected abstract float getOnHitExplosionRadius();
 }

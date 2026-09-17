@@ -4,9 +4,14 @@ import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.block.entity.renderer.GuidedMissileLauncherBER;
 import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.entity.custom.client.fpv.FPVRenderer;
+import com.boruebork.nukemod.entity.custom.client.fpvint.FPVInterceptorRenderer;
+import com.boruebork.nukemod.entity.custom.client.grenade.GrenadeRenderer;
+import com.boruebork.nukemod.entity.custom.client.grenade_drone.GrenadeDroneRenderer;
 import com.boruebork.nukemod.entity.custom.client.guided.GuidedMissileRenderer;
 import com.boruebork.nukemod.entity.custom.client.mushroom.MushroomEntityRenderer;
 import com.boruebork.nukemod.entity.custom.client.nuke.NukeEntityRenderer;
+import com.boruebork.nukemod.entity.custom.client.rocket.RocketRenderer;
+import com.boruebork.nukemod.entity.custom.client.rocket_drone.RocketDroneRenderer;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.gui.menu.EnricherScreen;
 import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherScreen;
@@ -63,6 +68,26 @@ public class NukeModbyBorueborkClient {
                 ModEntities.FPV_DRONE.get(),
                 FPVRenderer::new
         );
+        event.registerEntityRenderer(
+                ModEntities.FPV_INTERCEPTOR_DRONE.get(),
+                FPVInterceptorRenderer::new
+        );
+        event.registerEntityRenderer(
+                ModEntities.GRENADE.get(),
+                GrenadeRenderer::new
+        );
+        event.registerEntityRenderer(
+                ModEntities.GRENADE_DRONE.get(),
+                GrenadeDroneRenderer::new
+        );
+        event.registerEntityRenderer(
+                ModEntities.ROCKET_DRONE.get(),
+                RocketDroneRenderer::new
+        );
+        event.registerEntityRenderer(
+                ModEntities.ROCKET.get(),
+                RocketRenderer::new
+        );
     }
 
     @SubscribeEvent
@@ -85,10 +110,17 @@ public class NukeModbyBorueborkClient {
             GLFW.GLFW_KEY_X, // Default key is P
             KeyMapping.Category.MISC // Mapping will be in the misc category
     ));
+    public static final Lazy<KeyMapping> DRONE_ATTACK_MAPPING = Lazy.of(() -> new KeyMapping(
+            "key.nukemodbyboruebork.drone_attack", // Will be localized using this translation key
+            InputConstants.Type.KEYSYM, // Default mapping is on the keyboard
+            GLFW.GLFW_KEY_B, // Default key is P
+            KeyMapping.Category.MISC // Mapping will be in the misc category
+    ));
 
     @SubscribeEvent // on the mod event bus only on the physical client
     public static void registerBindings(RegisterKeyMappingsEvent event) {
         event.register(EXIT_DRONE_KEY.get());
+        event.register(DRONE_ATTACK_MAPPING.get());
     }
 
 

@@ -1,10 +1,7 @@
 package com.boruebork.nukemod.entity;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.FPVDrone;
-import com.boruebork.nukemod.entity.custom.GuidedMissile;
-import com.boruebork.nukemod.entity.custom.MushroomEntity;
-import com.boruebork.nukemod.entity.custom.NukeEntity;
+import com.boruebork.nukemod.entity.custom.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -25,7 +22,11 @@ public class ModEntities {
     public static ResourceKey<EntityType<?>> GUIDED_MISSILE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("guided_missile"));
     public static ResourceKey<EntityType<?>> MUSHROOM_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("mushroom_key"));
     public static ResourceKey<EntityType<?>> FPV_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("fpv"));
-
+    public static ResourceKey<EntityType<?>> FPV_INT_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("fpv_interceptor"));
+    public static ResourceKey<EntityType<?>> GRENADE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("grenade"));
+    public static ResourceKey<EntityType<?>> GRENADE_DRONE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("grenade_drone"));
+    public static ResourceKey<EntityType<?>> ROCKET_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rocket"));
+    public static ResourceKey<EntityType<?>> ROCKET_DRONE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rocket_drone"));
     public static final Supplier<EntityType<NukeEntity>> NUKE =
             ENTITY_TYPES.register("nuke", () -> EntityType.Builder.of(NukeEntity::new,
                             MobCategory.MISC)
@@ -43,6 +44,32 @@ public class ModEntities {
                             MobCategory.MISC)
                     .sized(1, 0.5f).clientTrackingRange(64)   // blocks at which the server keeps sending updates
                     .updateInterval(1).build(FPV_KEY));
+    public static final DeferredHolder<EntityType<?>, EntityType<FPVInterceptorDrone>> FPV_INTERCEPTOR_DRONE =
+            ENTITY_TYPES.register("fpv_interceptor", () -> EntityType.Builder.of(FPVInterceptorDrone::new,
+                            MobCategory.MISC)
+                    .sized(1, 0.5f).clientTrackingRange(64)   // blocks at which the server keeps sending updates
+                    .updateInterval(1).build(FPV_INT_KEY));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<Grenade>> GRENADE =
+            ENTITY_TYPES.register("grenade", () -> EntityType.Builder.of(Grenade::new,
+                            MobCategory.MISC)
+                    .sized(0.25f, 0.25f)   // blocks at which the server keeps sending updates
+                    .build(GRENADE_KEY));
+    public static final DeferredHolder<EntityType<?>, EntityType<GrenadeDrone>> GRENADE_DRONE =
+            ENTITY_TYPES.register("grenade_drone", () -> EntityType.Builder.of(GrenadeDrone::new,
+                            MobCategory.MISC)
+                    .sized(1, 0.5f)   // blocks at which the server keeps sending updates
+                    .build(GRENADE_DRONE_KEY));
+    public static final DeferredHolder<EntityType<?>, EntityType<Rocket>> ROCKET =
+            ENTITY_TYPES.register("rocket", () -> EntityType.Builder.of(Rocket::new,
+                            MobCategory.MISC)
+                    .sized(0.25f, 0.25f)   // blocks at which the server keeps sending updates
+                    .build(ROCKET_KEY));
+    public static final DeferredHolder<EntityType<?>, EntityType<RocketDrone>> ROCKET_DRONE =
+            ENTITY_TYPES.register("rocket_drone", () -> EntityType.Builder.of(RocketDrone::new,
+                            MobCategory.MISC)
+                    .sized(1, 0.5f)   // blocks at which the server keeps sending updates
+                    .build(ROCKET_DRONE_KEY));
 
 
 
