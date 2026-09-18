@@ -14,10 +14,12 @@ public class RocketDrone extends AbstractFPVProjectileLaunchingDrone{
 
     @Override
     protected void defineProjectileOffsets() {
-        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(7.75, -4, 0).scale(thisEntity.getWidth()/14).add(0, 0.7f, 0));
-        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(-7.75, -4, 0).scale(thisEntity.getWidth()/14).add(0, 0.7f, 0));
-        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(-4.5, -4, 0).scale(thisEntity.getWidth()/14).add(0, 0.7f, 0));
-        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(4.5, -4, 0).scale(thisEntity.getWidth()/14).add(0, 0.7f, 0));
+        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(7.75, -3.2, 0).scale((double) 1 /16).add(0, 0.7f, 0));
+        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(-7.75, -3.2, 0).scale((double) 1 /16).add(0, 0.7f, 0));
+        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(-4.5, -3.2, 0).scale((double) 1 /16).add(0, 0.7f, 0));
+        addProjectileBay(ModEntities.ROCKET.get(),new Vec3(4.5, -3.2, 0).scale((double) 1 /16).add(0, 0.7f, 0));
+        addProjectileBay(ModEntities.GRENADE.get(),new Vec3(4.5, -3.8, 0).scale((double) 1 /16).add(0, 0.7f, 0));
+
     }
 
     @Override

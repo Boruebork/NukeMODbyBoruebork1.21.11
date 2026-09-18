@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public abstract class AbstractFPVProjectileLaunchingDrone extends AbstractFPVDrone {
-    private static final EntityDataAccessor<Integer> WEAPONS_MODE =
+    public static final EntityDataAccessor<Integer> WEAPONS_MODE =
             SynchedEntityData.defineId(AbstractFPVProjectileLaunchingDrone.class, EntityDataSerializers.INT);
     ;
     public List<EntityType<?>> modes = new ArrayList<>();
@@ -49,7 +49,8 @@ public abstract class AbstractFPVProjectileLaunchingDrone extends AbstractFPVDro
     }
 
     public void setServerMode(int mode) {
-        if (mode > modes.size()) return;
+        System.err.println("Server Mode: " + mode);
+        if (mode >= modes.size()) return;
         this.entityData.set(WEAPONS_MODE, mode);
     }
 
@@ -57,6 +58,27 @@ public abstract class AbstractFPVProjectileLaunchingDrone extends AbstractFPVDro
         int rt = getNextBay(this.modes.get(this.entityData.get(WEAPONS_MODE)));
         if (rt == -1) return;
         fireBay(rt);
+    }
+
+    public int getAmountOf(EntityType<?> type) {
+        int cnt = 0;
+        for (BayEntry el : this.flattenedBays){
+            if (el.type() == type){
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+    public int getAmountOfLoaded(EntityType<?> type){
+        int cnt = 0;
+        int i = 0;
+        for (BayEntry el : this.flattenedBays){
+            if (el.type() == type && this.entityData.get(LOADED_BAYS).get(i)){
+                cnt++;
+            }
+            i++;
+        }
+        return cnt;
     }
 
     protected record BayEntry(EntityType<?> type, Vec3 offset) {}
@@ -104,7 +126,7 @@ public abstract class AbstractFPVProjectileLaunchingDrone extends AbstractFPVDro
         Entity projectile = projType.create(level(), EntitySpawnReason.TRIGGERED);
         assert projectile != null;
         if (projectile instanceof DroneProjectile dp) {
-            dp.setStartingSpeed(this.getDeltaMovement(), this.getXRot(), this.getYRot());
+            dp.setStartingSpeed(this.getDeltaMovement(), this.getXRot(), this.getYRot(), this);
         }
         projectile.setPos(worldPos.x, worldPos.y, worldPos.z);
         level().addFreshEntity(projectile);

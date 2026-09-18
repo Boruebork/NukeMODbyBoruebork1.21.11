@@ -14,25 +14,24 @@ import net.minecraft.resources.Identifier;
 public class RocketModel extends EntityModel<RocketRenderState> {
 	// This layer location should be baked with EntityRendererProvider.Context in the entity renderer and passed into this model's constructor
 	public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID, "rocket"), "main");
-	private final ModelPart bb_main;
+	private final ModelPart rocket;
 
 	public RocketModel(ModelPart root) {
         super(root);
-        this.bb_main = root.getChild("bb_main");
+		this.rocket = root.getChild("rocket");
 	}
 
 	public static LayerDefinition createBodyLayer() {
 		MeshDefinition meshdefinition = new MeshDefinition();
 		PartDefinition partdefinition = meshdefinition.getRoot();
 
-		PartDefinition bb_main = partdefinition.addOrReplaceChild("bb_main", CubeListBuilder.create().texOffs(0, 0).addBox(-0.75F, -9.0F, -4.0F, 1.0F, 1.0F, 8.0F, new CubeDeformation(0.0F))
-		.texOffs(0, 9).addBox(-0.75F, -9.0F, -4.0F, 1.0F, 1.0F, 8.0F, new CubeDeformation(0.0F))
-		.texOffs(0, 18).addBox(-0.25F, -10.0F, 3.0F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F))
-		.texOffs(18, 0).addBox(-0.25F, -8.0F, 3.0F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offset(0.0F, 24.0F, 0.0F));
+		PartDefinition rocket = partdefinition.addOrReplaceChild("rocket", CubeListBuilder.create().texOffs(0, 0).addBox(-0.5F, -0.5F, -3.8333F, 1.0F, 1.0F, 8.0F, new CubeDeformation(0.0F))
+				.texOffs(0, 9).addBox(-0.5F, -0.5F, -3.8333F, 1.0F, 1.0F, 8.0F, new CubeDeformation(0.0F))
+				.texOffs(0, 18).addBox(0.0F, -1.5F, 3.1667F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F))
+				.texOffs(18, 0).addBox(0.0F, 0.5F, 3.1667F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offset(-0.25F, 15.5F, -0.1667F));
 
-		PartDefinition cube_r1 = bb_main.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(18, 2).addBox(0.0F, -0.5F, -0.5F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.75F, -8.5F, 3.5F, 0.0F, 0.0F, 1.5708F));
-
-		PartDefinition cube_r2 = bb_main.addOrReplaceChild("cube_r2", CubeListBuilder.create().texOffs(2, 18).addBox(0.0F, -0.5F, -0.5F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-1.25F, -8.5F, 3.5F, 0.0F, 0.0F, 1.5708F));
+		PartDefinition cube_r1 = rocket.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(18, 2).addBox(0.0F, -1.5F, 1.25F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F))
+				.texOffs(2, 18).addBox(0.0F, 0.5F, 1.25F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, 0.0F, 1.9167F, 0.0F, 0.0F, 1.5708F));
 
 		return LayerDefinition.create(meshdefinition, 32, 32);
 	}

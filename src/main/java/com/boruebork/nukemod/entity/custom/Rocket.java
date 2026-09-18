@@ -15,18 +15,18 @@ import net.minecraft.world.phys.Vec3;
 
 public class Rocket extends Entity implements DroneProjectile {
     private int ticks = 0;
-
+    private AbstractFPVProjectileLaunchingDrone parent;
     public Rocket(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
 
-    public void setStartingSpeed(Vec3 speed, float xRot, float yRot) {
+    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractFPVProjectileLaunchingDrone parent) {
         this.setDeltaMovement(Vec3.directionFromRotation(xRot, yRot).normalize().scale(3).add(speed));
         this.setXRot(xRot);
         this.setYRot(yRot);
+        this.parent = parent;
         this.ticks = 0;
     }
-
     @Override
     public void tick() {
         super.tick();
@@ -34,20 +34,20 @@ public class Rocket extends Entity implements DroneProjectile {
             ticks = 1;
             return;
         }
-        HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, Entity::isPickable);
 
         this.move(MoverType.SELF, getDeltaMovement());
-
+        boolean hitBlock = this.horizontalCollision || this.verticalCollision;
+        if (hitBlock) {
+            explode();
+        }
+        HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, e -> e.isPickable() && e != parent);
         if (hitResult.getType() != HitResult.Type.MISS) {
             this.setPos(hitResult.getLocation());
             explode();
             return;
         }
 
-        boolean hitBlock = this.horizontalCollision || this.verticalCollision;
-        if (hitBlock) {
-            explode();
-        }
+
         ticks++;
     }
 

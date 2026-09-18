@@ -18,7 +18,7 @@ public class Grenade extends Entity implements DroneProjectile {
         super(entityType, level);
     }
 
-    public void setStartingSpeed(Vec3 speed, float xRot, float yRot) {
+    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractFPVProjectileLaunchingDrone parent) {
         this.setDeltaMovement(speed);
         this.setXRot(xRot);
         this.setYRot(yRot);

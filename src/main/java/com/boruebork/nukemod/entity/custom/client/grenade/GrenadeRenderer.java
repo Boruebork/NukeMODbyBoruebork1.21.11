@@ -24,7 +24,7 @@ public class GrenadeRenderer extends EntityRenderer<Grenade, GrenadeRenderState>
         super.submit(renderState, poseStack, nodeCollector, cameraRenderState);
         poseStack.pushPose();
         poseStack.translate(0, 1.5f, 0);
-        poseStack.rotateAround(Axis.XN.rotationDegrees(180), 0,0,0);
+        poseStack.rotateAround(Axis.XN.rotationDegrees(renderState.xRot), 0,0,0);
         poseStack.rotateAround(Axis.YN.rotationDegrees(renderState.yRot), 0,0,0);
         nodeCollector.submitModel(model, renderState, poseStack, model.renderType(getTexture()), renderState.lightCoords, OverlayTexture.NO_OVERLAY, renderState.outlineColor, (ModelFeatureRenderer.CrumblingOverlay) null);
         poseStack.popPose();

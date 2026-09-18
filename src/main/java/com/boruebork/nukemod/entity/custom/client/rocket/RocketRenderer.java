@@ -24,15 +24,28 @@ public class RocketRenderer extends EntityRenderer<Rocket, RocketRenderState> {
     @Override
     public void submit(RocketRenderState renderState, PoseStack poseStack, SubmitNodeCollector nodeCollector, CameraRenderState cameraRenderState) {
         super.submit(renderState, poseStack, nodeCollector, cameraRenderState);
-        poseStack.pushPose();
-        poseStack.translate(0, 1.5f, 0);
-        poseStack.rotateAround(Axis.XN.rotationDegrees(180), 0,0,0);
-        poseStack.rotateAround(Axis.YP.rotationDegrees(renderState.yRot), 0,0,0);
-        poseStack.rotateAround(Axis.XP.rotationDegrees(renderState.xRot), 0,0,0);
-        nodeCollector.submitModel(model, renderState, poseStack, model.renderType(getTexture()), renderState.lightCoords, OverlayTexture.NO_OVERLAY, renderState.outlineColor, (ModelFeatureRenderer.CrumblingOverlay) null);
-        poseStack.popPose();
 
-    }private Identifier getTexture() {
+        poseStack.pushPose();
+
+        poseStack.translate(0, -0.84f, 0);
+
+        // rotate around the model's own pivot instead of around (0,0,0)
+        poseStack.translate(-0.25F / 16F, 15.5F / 16F, -0.1667F / 16F);
+        poseStack.mulPose(Axis.YP.rotationDegrees(-renderState.yRot));
+        poseStack.mulPose(Axis.XP.rotationDegrees(renderState.xRot));
+        poseStack.mulPose(Axis.XP.rotationDegrees(180));
+        poseStack.translate(0.25F / 16F, -15.5F / 16F, 0.1667F / 16F);
+
+        nodeCollector.submitModel(
+                model, renderState, poseStack,
+                model.renderType(getTexture()),
+                renderState.lightCoords, OverlayTexture.NO_OVERLAY,
+                renderState.outlineColor, null
+        );
+
+        poseStack.popPose();
+    }
+    private Identifier getTexture() {
         return Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID,
                 "textures/entity/rocket.png");
     }

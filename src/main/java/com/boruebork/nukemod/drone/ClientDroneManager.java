@@ -129,10 +129,12 @@ public class ClientDroneManager {
         }
 
         int key = event.getKey();
-
+        System.err.println(1);
         if (key >= GLFW.GLFW_KEY_1 && key <= GLFW.GLFW_KEY_9) {
+            System.err.println(2);
             int number = key - GLFW.GLFW_KEY_1 + 1;
             if (PilotingClientState.drone instanceof AbstractFPVProjectileLaunchingDrone pDrone){
+                System.err.println(3);
                 pDrone.setMode(number - 1);
             }
         }

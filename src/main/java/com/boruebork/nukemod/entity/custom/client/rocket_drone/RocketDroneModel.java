@@ -138,9 +138,9 @@ public class RocketDroneModel extends EntityModel<RocketDroneRenderState> {
 		this.right_front_rotor.yRot = -renderState.rotorAngle * Mth.DEG_TO_RAD; // opposite spin looks better
 		this.left_back_rotor.yRot   = renderState.rotorAngle * Mth.DEG_TO_RAD;
 		this.right_back_rotor.yRot  = -renderState.rotorAngle * Mth.DEG_TO_RAD;
-		this.rocket_left.visible = renderState.nextRocket < 1 && renderState.nextRocket != -1;
-		this.rocket_right.visible = renderState.nextRocket < 2 && renderState.nextRocket != -1;
-		this.rocket_right2.visible = renderState.nextRocket < 3 && renderState.nextRocket != -1;
-		this.rocket_left2.visible = renderState.nextRocket < 4 && renderState.nextRocket != -1;
+		this.rocket_left2.visible = renderState.nextRocket < 1 && renderState.nextRocket != -1;
+		this.rocket_right2.visible = renderState.nextRocket < 2 && renderState.nextRocket != -1;
+		this.rocket_right.visible = renderState.nextRocket < 3 && renderState.nextRocket != -1;
+		this.rocket_left.visible = renderState.nextRocket < 4 && renderState.nextRocket != -1;
 	}
 }

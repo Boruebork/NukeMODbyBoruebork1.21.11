@@ -20,6 +20,6 @@ public record SetProjectileModePayload(int mode) implements CustomPacketPayload 
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
-        return null;
+        return TYPE;
     }
 }
