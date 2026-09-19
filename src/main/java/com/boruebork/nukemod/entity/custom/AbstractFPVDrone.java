@@ -1,13 +1,19 @@
 package com.boruebork.nukemod.entity.custom;
 
+import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.drone.DroneManager;
+import com.boruebork.nukemod.entity.ticket.ModTickets;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.*;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -17,11 +23,16 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Comparator;
 import java.util.UUID;
 
+import static com.boruebork.nukemod.entity.ticket.ModTickets.CONTROLLER;
 import static net.minecraft.world.entity.player.Player.MAX_HEALTH;
 
 public abstract class AbstractFPVDrone extends Entity {
@@ -29,6 +40,8 @@ public abstract class AbstractFPVDrone extends Entity {
     private int tickNum = 0;
     private float rotorSpeed = 0f;
     private float rotorAngle = 0f;
+    private static final int TICKET_RADIUS = 3; // chunks; ~48 blocks
+    private static final int TICKET_LEVEL = 31; // see note below on what this controls
     public static final EntityDataAccessor<String> CONTROLLER_DATA =
             SynchedEntityData.defineId(
                     // The class of the entity.
@@ -38,6 +51,8 @@ public abstract class AbstractFPVDrone extends Entity {
             );
     public static final EntityDataAccessor<Float> HEALTH_DATA =
             SynchedEntityData.defineId(AbstractFPVDrone.class, EntityDataSerializers.FLOAT);
+    private long ticketTimer = 0;
+
     public AbstractFPVDrone(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
@@ -77,11 +92,27 @@ public abstract class AbstractFPVDrone extends Entity {
             }
             //System.out.println("Client pos: " +  this.getOnPos());
         }else{
+            if (level() instanceof ServerLevel sl) {
+                if (isBeingPiloted()) {
+                    if (this.ticketTimer > 0L) {
+                        this.ticketTimer--;
+                    } else {
+                        /*int simDistance = sl.getServer().getPlayerList().getSimulationDistance();
+                        ChunkPos pos = new ChunkPos(new BlockPos(1000, 1000, 1000));
+                        ModTickets.CONTROLLER.forceChunk(sl,this, pos.x, pos.z, true, true);
+                        System.err.println(sl.isPositionEntityTicking(new BlockPos(1000, 1000, 1000)));
+*/
+                        this.ticketTimer = ModTickets.DRONE_TICKET.get().timeout() - 1L;
+                    }
+                } else {
+                    this.ticketTimer = 0L;   // will re-arm instantly on next piloting
+                }
+            }
+
             if (this.tickNum == 0){
                 this.move(MoverType.SELF, new Vec3(0, 0.5, 0));
             }
             tickNum++;
-            //System.err.println("Server pos: " +  this.getOnPos());
         }
         float targetSpeed = isBeingPiloted() ? 45f : 0f; // degrees/tick at full spin
         // ease toward target so rotors spin up/down instead of snapping
@@ -91,7 +122,6 @@ public abstract class AbstractFPVDrone extends Entity {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
-        System.err.println("hurt server");
         if (this.isInvulnerableTo(level, damageSource)) return false;
 
         // only explosions hurt it — bullets, punches, fall damage etc. still do nothing
@@ -99,7 +129,6 @@ public abstract class AbstractFPVDrone extends Entity {
 
         float newHealth = this.getHealth() - amount;
         this.setHealth(newHealth);
-        System.err.println(newHealth);
         if (newHealth <= 0.0F) {
             this.destroyDrone(damageSource);
         }
@@ -221,6 +250,17 @@ public abstract class AbstractFPVDrone extends Entity {
     public float getRotorSpeed() {
         return rotorSpeed;
     }
+
+    @Override
+    protected void addAdditionalSaveData(ValueOutput valueOutput) {
+
+    }
+
+    @Override
+    protected void readAdditionalSaveData(ValueInput valueInput) {
+
+    }
+
     protected abstract float getMaxHealth();
     protected abstract float getVerticalSpeedModifier();
     protected abstract float getHorizontalSpeedModifier();

@@ -2,6 +2,7 @@ package com.boruebork.nukemod.entity;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.*;
+import com.boruebork.nukemod.entity.custom.radar.BasicRadar;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -27,6 +28,8 @@ public class ModEntities {
     public static ResourceKey<EntityType<?>> GRENADE_DRONE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("grenade_drone"));
     public static ResourceKey<EntityType<?>> ROCKET_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rocket"));
     public static ResourceKey<EntityType<?>> ROCKET_DRONE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rocket_drone"));
+    public static ResourceKey<EntityType<?>> BASIC_RADAR_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("basic_radar"));
+
     public static final Supplier<EntityType<NukeEntity>> NUKE =
             ENTITY_TYPES.register("nuke", () -> EntityType.Builder.of(NukeEntity::new,
                             MobCategory.MISC)
@@ -42,12 +45,12 @@ public class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<FPVDrone>> FPV_DRONE =
             ENTITY_TYPES.register("fpv", () -> EntityType.Builder.of(FPVDrone::new,
                             MobCategory.MISC)
-                    .sized(1, 0.5f).clientTrackingRange(64)   // blocks at which the server keeps sending updates
+                    .sized(1, 0.5f).clientTrackingRange(256)   // blocks at which the server keeps sending updates
                     .updateInterval(1).build(FPV_KEY));
     public static final DeferredHolder<EntityType<?>, EntityType<FPVInterceptorDrone>> FPV_INTERCEPTOR_DRONE =
             ENTITY_TYPES.register("fpv_interceptor", () -> EntityType.Builder.of(FPVInterceptorDrone::new,
                             MobCategory.MISC)
-                    .sized(1, 0.5f).clientTrackingRange(64)   // blocks at which the server keeps sending updates
+                    .sized(1, 0.5f).clientTrackingRange(256)   // blocks at which the server keeps sending updates
                     .updateInterval(1).build(FPV_INT_KEY));
 
     public static final DeferredHolder<EntityType<?>, EntityType<Grenade>> GRENADE =
@@ -58,7 +61,7 @@ public class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<GrenadeDrone>> GRENADE_DRONE =
             ENTITY_TYPES.register("grenade_drone", () -> EntityType.Builder.of(GrenadeDrone::new,
                             MobCategory.MISC)
-                    .sized(1, 0.5f)   // blocks at which the server keeps sending updates
+                    .sized(1, 0.5f).clientTrackingRange(256)   // blocks at which the server keeps sending updates
                     .build(GRENADE_DRONE_KEY));
     public static final DeferredHolder<EntityType<?>, EntityType<Rocket>> ROCKET =
             ENTITY_TYPES.register("rocket", () -> EntityType.Builder.of(Rocket::new,
@@ -67,9 +70,15 @@ public class ModEntities {
                     .build(ROCKET_KEY));
     public static final DeferredHolder<EntityType<?>, EntityType<RocketDrone>> ROCKET_DRONE =
             ENTITY_TYPES.register("rocket_drone", () -> EntityType.Builder.of(RocketDrone::new,
-                            MobCategory.MISC)
+                            MobCategory.MISC).clientTrackingRange(256)
                     .sized(1, 0.5f)   // blocks at which the server keeps sending updates
                     .build(ROCKET_DRONE_KEY));
+    public static final DeferredHolder<EntityType<?>, EntityType<BasicRadar>> BASIC_RADAR =
+            ENTITY_TYPES.register("basic_radar", () -> EntityType.Builder.of(BasicRadar::new,
+                            MobCategory.MISC)
+                    .sized(1, 2)   // blocks at which the server keeps sending updates
+                    .build(BASIC_RADAR_KEY));
+
 
 
 

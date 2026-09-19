@@ -10,6 +10,7 @@ import com.boruebork.nukemod.entity.custom.client.grenade_drone.GrenadeDroneRend
 import com.boruebork.nukemod.entity.custom.client.guided.GuidedMissileRenderer;
 import com.boruebork.nukemod.entity.custom.client.mushroom.MushroomEntityRenderer;
 import com.boruebork.nukemod.entity.custom.client.nuke.NukeEntityRenderer;
+import com.boruebork.nukemod.entity.custom.client.radar.basic_radar.BasicRadarRenderer;
 import com.boruebork.nukemod.entity.custom.client.rocket.RocketRenderer;
 import com.boruebork.nukemod.entity.custom.client.rocket_drone.RocketDroneRenderer;
 import com.boruebork.nukemod.gui.ModMenuTypes;
@@ -87,6 +88,10 @@ public class NukeModbyBorueborkClient {
         event.registerEntityRenderer(
                 ModEntities.ROCKET.get(),
                 RocketRenderer::new
+        );
+        event.registerEntityRenderer(
+                ModEntities.BASIC_RADAR.get(),
+                BasicRadarRenderer::new
         );
     }
 

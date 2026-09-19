@@ -4,6 +4,7 @@ import com.boruebork.nukemod.block.ModBlocks;
 import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.entity.NukeMODEntityDataSerializers;
 import com.boruebork.nukemod.entity.ModEntities;
+import com.boruebork.nukemod.entity.ticket.ModTickets;
 import com.boruebork.nukemod.explosion.ExpandingExplosion;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.item.ModCreativeModeTabs;
@@ -55,6 +56,7 @@ public class NukeModbyBoruebork {
         ModMenuTypes.register(modEventBus);
         ModSounds.register(modEventBus);
         NukeMODEntityDataSerializers.register(modEventBus);
+        ModTickets.register(modEventBus);
 
 
         // Register ourselves for server and other game events we are interested in.

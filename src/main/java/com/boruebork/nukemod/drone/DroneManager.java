@@ -7,28 +7,34 @@ import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.DroneLaucnhProjectilePayload;
 import com.boruebork.nukemod.network.packet.ExitDronePacket;
 import com.boruebork.nukemod.network.packet.SetProjectileModePayload;
+import net.minecraft.server.level.ServerChunkCache;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 @EventBusSubscriber
 public class DroneManager {
     private static DroneManager INSTANCE;
-
+    private DroneChunkStreamer chunkStreamer;
     public static DroneManager getInstance() {
         return INSTANCE;
     }
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event){
         INSTANCE = new DroneManager();
+        INSTANCE.chunkStreamer = new DroneChunkStreamer();
     }
     @SubscribeEvent
     public static void onPlayersDeath(LivingDeathEvent event){
@@ -43,6 +49,7 @@ public class DroneManager {
     }
 
     public Map<UUID, UUID> playerToDrone = new HashMap<>();
+    public Map<AbstractFPVDrone, UUID> drones = new HashMap<>();
     public static void updateDronePos(DroneInputPayload droneInputPayload, IPayloadContext context) {
         Entity ent = NukeModbyBoruebork.server.getLevel(Level.OVERWORLD).getEntity(droneInputPayload.droneId());
         if (ent != null)
@@ -54,13 +61,15 @@ public class DroneManager {
     }
     public void addEntry(Player player, AbstractFPVDrone drone){
         playerToDrone.put(player.getUUID(), drone.getUUID());
+        drones.put(drone, drone.getUUID());
     }
-    public static void exitDrone(ExitDronePacket exitDronePacket, IPayloadContext context) {
+    public static void exitDrone(ExitDronePacket $, IPayloadContext context) {
         UUID droneId = DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
         Entity ent = context.player().level().getEntity(droneId);
         if (ent == null) return;
         if (ent instanceof AbstractFPVDrone drone){
             drone.stopOperating();
+            getInstance().chunkStreamer.onExit((ServerPlayer) context.player());
         }
     }
 
@@ -78,5 +87,57 @@ public class DroneManager {
         if (ent instanceof AbstractFPVProjectileLaunchingDrone drone){
             drone.tryFireWeapon();
         }
+    }
+    @SubscribeEvent
+    public static void serverTick(ServerTickEvent.Pre event) {
+        for (AbstractFPVDrone drone : getInstance().drones.keySet()){
+            getInstance().updateChunkTicket(drone);
+
+            UUID pilotId = getInstance().playerToDrone.entrySet().stream()
+                    .filter(e -> e.getValue().equals(drone.getUUID()))
+                    .map(Map.Entry::getKey).findFirst().orElse(null);
+            if (pilotId != null) {
+                ServerPlayer pilot = drone.level().getServer().getPlayerList().getPlayer(pilotId);
+                if (pilot != null) getInstance().chunkStreamer.update(pilot, drone);
+            }
+        }
+    }
+    private final Map<AbstractFPVDrone, ChunkPos> lastTicketPositions = new HashMap<>();
+
+    private void updateChunkTicket(AbstractFPVDrone drone) {
+        if (!drone.isBeingPiloted()) {
+            releaseTicket(drone);
+            return;
+        }
+
+        ChunkPos currentPos = new ChunkPos(drone.blockPosition());
+        ChunkPos lastPos = lastTicketPositions.get(drone);
+        if (currentPos.equals(lastPos)) return;
+
+        ServerChunkCache chunkSource = ((ServerLevel) drone.level()).getChunkSource();
+        int radius = ((ServerLevel) drone.level()).getServer().getPlayerList().getSimulationDistance();
+
+        if (lastPos != null) {
+            chunkSource.removeTicketWithRadius(TicketType.PLAYER_LOADING, lastPos, radius);
+            chunkSource.removeTicketWithRadius(TicketType.PLAYER_SIMULATION, lastPos, radius);
+        }
+        chunkSource.addTicketWithRadius(TicketType.PLAYER_LOADING, currentPos, radius);
+        chunkSource.addTicketWithRadius(TicketType.PLAYER_SIMULATION, currentPos, radius);
+
+        lastTicketPositions.put(drone, currentPos);
+    }
+
+    private void releaseTicket(AbstractFPVDrone drone) {
+        ChunkPos lastPos = lastTicketPositions.remove(drone);
+        if (lastPos != null && drone.level() instanceof ServerLevel serverLevel) {
+            int radius = serverLevel.getServer().getPlayerList().getSimulationDistance();
+            ServerChunkCache chunkSource = serverLevel.getChunkSource();
+            chunkSource.removeTicketWithRadius(TicketType.PLAYER_LOADING, lastPos, radius);
+            chunkSource.removeTicketWithRadius(TicketType.PLAYER_SIMULATION, lastPos, radius);
+        }
+    }
+
+    public AbstractFPVDrone getPilotedDrone(ServerPlayer player) {
+        return (AbstractFPVDrone) player.level().getEntity(playerToDrone.get(player.getUUID()));
     }
 }

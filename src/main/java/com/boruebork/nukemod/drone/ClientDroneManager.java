@@ -101,7 +101,7 @@ public class ClientDroneManager {
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         if (!ClientDroneManager.PilotingClientState.isPiloting())
             return;
-
+        //event.setRoll(90f);
         event.setYaw(PilotingClientState.yRot);
         event.setPitch(PilotingClientState.xRot);
         PilotingClientState.drone.updateLookClientSide(PilotingClientState.xRot, PilotingClientState.yRot);
@@ -114,6 +114,7 @@ public class ClientDroneManager {
             PilotingClientState.drone = null;
             return;
         }
+        //System.out.println("Client drone: " + PilotingClientState.drone+ "!");
         if (PilotingClientState.drone == null) return;
         if (PilotingClientState.drone.getEntityData().get(CONTROLLER_DATA).isEmpty() || PilotingClientState.drone.getRemovalReason() == Entity.RemovalReason.DISCARDED){
             PilotingClientState.drone = null;
@@ -129,12 +130,9 @@ public class ClientDroneManager {
         }
 
         int key = event.getKey();
-        System.err.println(1);
         if (key >= GLFW.GLFW_KEY_1 && key <= GLFW.GLFW_KEY_9) {
-            System.err.println(2);
             int number = key - GLFW.GLFW_KEY_1 + 1;
             if (PilotingClientState.drone instanceof AbstractFPVProjectileLaunchingDrone pDrone){
-                System.err.println(3);
                 pDrone.setMode(number - 1);
             }
         }
