@@ -2,9 +2,9 @@ package com.boruebork.nukemod;
 
 import com.boruebork.nukemod.block.ModBlocks;
 import com.boruebork.nukemod.block.entity.ModBE;
+import com.boruebork.nukemod.drone.ModTickets;
 import com.boruebork.nukemod.entity.NukeMODEntityDataSerializers;
 import com.boruebork.nukemod.entity.ModEntities;
-import com.boruebork.nukemod.entity.ticket.ModTickets;
 import com.boruebork.nukemod.explosion.ExpandingExplosion;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.item.ModCreativeModeTabs;

@@ -8,31 +8,43 @@ import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.entity.EntityAccess;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin {
 
-    @ModifyVariable(method = "move", at = @At("STORE"), ordinal = 1)
-    private SectionPos drone$fakeSectionPosForTracking(SectionPos original, ServerPlayer player) {
-        AbstractFPVDrone drone = DroneManager.getInstance().getPilotedDrone(player);
-        if (drone != null) {
-            return SectionPos.of(BlockPos.containing(drone.getX(), drone.getY(), drone.getZ()));
+    @Redirect(
+            method = {"move", "updatePlayerPos"},
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/core/SectionPos;of(Lnet/minecraft/world/level/entity/EntityAccess;)Lnet/minecraft/core/SectionPos;"
+            )
+    )
+    private SectionPos drone$fakeSectionPosForTracking(EntityAccess entity) {
+        if (entity instanceof ServerPlayer player) {
+            AbstractFPVDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+            if (drone != null) {
+                return SectionPos.of(BlockPos.containing(drone.getX(), drone.getY(), drone.getZ()));
+            }
         }
-        return original;
+        return SectionPos.of(entity);
     }
 
-    @ModifyVariable(method = "updateChunkTracking", at = @At("STORE"), ordinal = 0)
-    private ChunkPos drone$fakeChunkPosForTracking(ChunkPos original, ServerPlayer player) {
+    @Redirect(
+            method = "updateChunkTracking",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/server/level/ServerPlayer;chunkPosition()Lnet/minecraft/world/level/ChunkPos;"
+            )
+    )
+    private ChunkPos drone$fakeChunkPosForTrackingView(ServerPlayer player) {
         AbstractFPVDrone drone = DroneManager.getInstance().getPilotedDrone(player);
         if (drone != null) {
             return new ChunkPos(drone.blockPosition());
         }
-        return original;
+        return player.chunkPosition();
     }
 }

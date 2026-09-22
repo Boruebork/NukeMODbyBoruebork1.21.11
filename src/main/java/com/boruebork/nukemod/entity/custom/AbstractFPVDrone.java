@@ -3,7 +3,6 @@ package com.boruebork.nukemod.entity.custom;
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.drone.DroneManager;
-import com.boruebork.nukemod.entity.ticket.ModTickets;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -32,7 +31,6 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Comparator;
 import java.util.UUID;
 
-import static com.boruebork.nukemod.entity.ticket.ModTickets.CONTROLLER;
 import static net.minecraft.world.entity.player.Player.MAX_HEALTH;
 
 public abstract class AbstractFPVDrone extends Entity {
@@ -90,19 +88,11 @@ public abstract class AbstractFPVDrone extends Entity {
                     );
                 }
             }
-            //System.out.println("Client pos: " +  this.getOnPos());
         }else{
             if (level() instanceof ServerLevel sl) {
                 if (isBeingPiloted()) {
                     if (this.ticketTimer > 0L) {
                         this.ticketTimer--;
-                    } else {
-                        /*int simDistance = sl.getServer().getPlayerList().getSimulationDistance();
-                        ChunkPos pos = new ChunkPos(new BlockPos(1000, 1000, 1000));
-                        ModTickets.CONTROLLER.forceChunk(sl,this, pos.x, pos.z, true, true);
-                        System.err.println(sl.isPositionEntityTicking(new BlockPos(1000, 1000, 1000)));
-*/
-                        this.ticketTimer = ModTickets.DRONE_TICKET.get().timeout() - 1L;
                     }
                 } else {
                     this.ticketTimer = 0L;   // will re-arm instantly on next piloting

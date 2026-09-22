@@ -10,7 +10,6 @@ import com.boruebork.nukemod.network.packet.SetProjectileModePayload;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.level.TicketType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -74,7 +73,7 @@ public class DroneManager {
     }
 
     public static void setWeaponsMode(SetProjectileModePayload payload, IPayloadContext context) {
-        UUID id =  DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
+        UUID id =  getInstance().playerToDrone.get(context.player().getUUID());
         Entity ent = context.player().level().getEntity(id);
         if (ent instanceof AbstractFPVProjectileLaunchingDrone drone){
             drone.setServerMode(payload.mode());
@@ -82,7 +81,7 @@ public class DroneManager {
     }
 
     public static void launchDroneProjectile(DroneLaucnhProjectilePayload $, IPayloadContext context) {
-        UUID id =  DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
+        UUID id =  getInstance().playerToDrone.get(context.player().getUUID());
         Entity ent = context.player().level().getEntity(id);
         if (ent instanceof AbstractFPVProjectileLaunchingDrone drone){
             drone.tryFireWeapon();
@@ -93,13 +92,13 @@ public class DroneManager {
         for (AbstractFPVDrone drone : getInstance().drones.keySet()){
             getInstance().updateChunkTicket(drone);
 
-            UUID pilotId = getInstance().playerToDrone.entrySet().stream()
+           /*UUID pilotId = getInstance().playerToDrone.entrySet().stream()
                     .filter(e -> e.getValue().equals(drone.getUUID()))
                     .map(Map.Entry::getKey).findFirst().orElse(null);
             if (pilotId != null) {
                 ServerPlayer pilot = drone.level().getServer().getPlayerList().getPlayer(pilotId);
                 if (pilot != null) getInstance().chunkStreamer.update(pilot, drone);
-            }
+            }*/
         }
     }
     private final Map<AbstractFPVDrone, ChunkPos> lastTicketPositions = new HashMap<>();
@@ -118,11 +117,11 @@ public class DroneManager {
         int radius = ((ServerLevel) drone.level()).getServer().getPlayerList().getSimulationDistance();
 
         if (lastPos != null) {
-            chunkSource.removeTicketWithRadius(TicketType.PLAYER_LOADING, lastPos, radius);
-            chunkSource.removeTicketWithRadius(TicketType.PLAYER_SIMULATION, lastPos, radius);
+            chunkSource.removeTicketWithRadius(ModTickets.DRONE_LOADING.get(), lastPos, radius);
+            chunkSource.removeTicketWithRadius(ModTickets.DRONE_SIMULATION.get(), lastPos, radius);
         }
-        chunkSource.addTicketWithRadius(TicketType.PLAYER_LOADING, currentPos, radius);
-        chunkSource.addTicketWithRadius(TicketType.PLAYER_SIMULATION, currentPos, radius);
+        chunkSource.addTicketWithRadius(ModTickets.DRONE_LOADING.get(), currentPos, radius);
+        chunkSource.addTicketWithRadius(ModTickets.DRONE_SIMULATION.get(), currentPos, radius);
 
         lastTicketPositions.put(drone, currentPos);
     }
@@ -132,8 +131,8 @@ public class DroneManager {
         if (lastPos != null && drone.level() instanceof ServerLevel serverLevel) {
             int radius = serverLevel.getServer().getPlayerList().getSimulationDistance();
             ServerChunkCache chunkSource = serverLevel.getChunkSource();
-            chunkSource.removeTicketWithRadius(TicketType.PLAYER_LOADING, lastPos, radius);
-            chunkSource.removeTicketWithRadius(TicketType.PLAYER_SIMULATION, lastPos, radius);
+            chunkSource.removeTicketWithRadius(ModTickets.DRONE_LOADING.get(), lastPos, radius);
+            chunkSource.removeTicketWithRadius(ModTickets.DRONE_SIMULATION.get(), lastPos, radius);
         }
     }
 
