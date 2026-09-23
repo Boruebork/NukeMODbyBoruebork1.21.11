@@ -91,14 +91,6 @@ public class DroneManager {
     public static void serverTick(ServerTickEvent.Pre event) {
         for (AbstractFPVDrone drone : getInstance().drones.keySet()){
             getInstance().updateChunkTicket(drone);
-
-           /*UUID pilotId = getInstance().playerToDrone.entrySet().stream()
-                    .filter(e -> e.getValue().equals(drone.getUUID()))
-                    .map(Map.Entry::getKey).findFirst().orElse(null);
-            if (pilotId != null) {
-                ServerPlayer pilot = drone.level().getServer().getPlayerList().getPlayer(pilotId);
-                if (pilot != null) getInstance().chunkStreamer.update(pilot, drone);
-            }*/
         }
     }
     private final Map<AbstractFPVDrone, ChunkPos> lastTicketPositions = new HashMap<>();
@@ -115,14 +107,12 @@ public class DroneManager {
 
         ServerChunkCache chunkSource = ((ServerLevel) drone.level()).getChunkSource();
         int radius = ((ServerLevel) drone.level()).getServer().getPlayerList().getSimulationDistance();
-
         if (lastPos != null) {
             chunkSource.removeTicketWithRadius(ModTickets.DRONE_LOADING.get(), lastPos, radius);
             chunkSource.removeTicketWithRadius(ModTickets.DRONE_SIMULATION.get(), lastPos, radius);
         }
         chunkSource.addTicketWithRadius(ModTickets.DRONE_LOADING.get(), currentPos, radius);
         chunkSource.addTicketWithRadius(ModTickets.DRONE_SIMULATION.get(), currentPos, radius);
-
         lastTicketPositions.put(drone, currentPos);
     }
 

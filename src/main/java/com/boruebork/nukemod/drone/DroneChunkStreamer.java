@@ -16,55 +16,6 @@ public class DroneChunkStreamer {
     private static final int STREAM_RADIUS = 6; // chunks — keep modest, this is real bandwidth per chunk
     private final Map<UUID, Set<ChunkPos>> streamedChunks = new HashMap<>();
     private Map<UUID, ChunkPos> lastStreamedCenter = new HashMap<>();
-    public void update(ServerPlayer player, AbstractFPVDrone drone) {
-        ServerLevel level = (ServerLevel) drone.level();
-        ChunkPos center = new ChunkPos(drone.blockPosition());
-        if (!center.equals(lastStreamedCenter.get(player.getUUID()))) {
-            // this is the actual hack: tell this ONE client its view center is the drone's chunk,
-            // completely independent of the player's real (stationary) position
-            player.connection.send(new ClientboundSetChunkCacheCenterPacket(center.x, center.z));
-            lastStreamedCenter.put(player.getUUID(), center);
-        }
-        Set<ChunkPos> desired = new HashSet<>();
-        for (int dx = -STREAM_RADIUS; dx <= STREAM_RADIUS; dx++) {
-            for (int dz = -STREAM_RADIUS; dz <= STREAM_RADIUS; dz++) {
-                desired.add(new ChunkPos(center.x + dx, center.z + dz));
-            }
-        }
-
-        Set<ChunkPos> current = streamedChunks.computeIfAbsent(player.getUUID(), k -> new HashSet<>());
-
-        // stop streaming chunks no longer in range — but never touch a chunk vanilla already owns for this player
-        current.removeIf(pos -> {
-            if (!desired.contains(pos) && !isVanillaTracked(player, pos)) {
-                player.connection.send(new ClientboundForgetLevelChunkPacket(pos));
-                return true;
-            }
-            return false;
-        });
-
-        // stream newly-in-range chunks — skip anything vanilla is already sending this player
-        for (ChunkPos pos : desired) {
-            if (current.contains(pos) || isVanillaTracked(player, pos)) continue;
-
-            LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
-            if (chunk == null) continue; // not loaded yet this tick — ticket should catch up shortly, retry next pass
-
-            player.connection.send(new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), null, null));
-            current.add(pos);
-        }
-        resendChunksAround(player, player.chunkPosition(), player.level().getServer().getPlayerList().getViewDistance());
-    }
-
-    public void clearFor(ServerPlayer player) {
-        Set<ChunkPos> current = streamedChunks.remove(player.getUUID());
-        if (current == null) return;
-        for (ChunkPos pos : current) {
-            if (!isVanillaTracked(player, pos)) {
-                player.connection.send(new ClientboundForgetLevelChunkPacket(pos));
-            }
-        }
-    }
     public void onExit(ServerPlayer player) {
         ChunkPos realPos = new ChunkPos(player.blockPosition());
 

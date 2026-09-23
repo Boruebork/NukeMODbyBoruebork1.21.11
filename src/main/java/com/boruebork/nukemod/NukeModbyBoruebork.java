@@ -31,6 +31,7 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(NukeModbyBoruebork.MODID)
+//-8276700333429520926
 public class NukeModbyBoruebork {
     // Define mod id in a common place for everything to reference
     public static final String MODID = "nukemodbyboruebork";

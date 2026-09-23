@@ -56,6 +56,7 @@ public class DroneInputSuppressor {
         ClientDroneManager.PilotingClientState.up = Minecraft.getInstance().options.keyJump.isDown();
         ClientDroneManager.PilotingClientState.down = Minecraft.getInstance().options.keyShift.isDown();
         player.setDeltaMovement(Vec3.ZERO);
+        player.setShiftKeyDown(false);
         // same onClientTickPost as above
         //if (player.isCrouching()) player.setCro(false);
         if (player.getPose() != Pose.STANDING) player.setPose(Pose.STANDING);
