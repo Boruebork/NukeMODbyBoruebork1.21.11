@@ -24,6 +24,7 @@ public class RocketDroneRenderer extends AbstractFPVRenderer<RocketDrone, Rocket
         poseStack.translate(0, 1.6, 0);
         poseStack.rotateAround(Axis.YN.rotationDegrees(renderState.yRot), 0, -1.6f+renderState.eyeHeight, 0);
         poseStack.rotateAround(Axis.XN.rotationDegrees(-renderState.xRot), 0 , -1.6f+renderState.eyeHeight, 0);
+        poseStack.rotateAround(Axis.ZN.rotationDegrees(-renderState.zRot), 0 , -1.6f+renderState.eyeHeight, 0);
         renderModel(model, renderState, poseStack, nodeCollector,cameraRenderState);
     }
 

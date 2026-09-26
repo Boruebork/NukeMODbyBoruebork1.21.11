@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 
 public abstract class AbstractFPVRenderer<T extends AbstractFPVDrone, S extends AbstractFPVDroneRenderState, M extends EntityModel<? super S>> extends EntityRenderer<T, S> {
     public abstract Identifier getTexture();
@@ -42,10 +43,12 @@ public abstract class AbstractFPVRenderer<T extends AbstractFPVDrone, S extends 
         if (ClientDroneManager.PilotingClientState.drone == entity){
             reusedState.xRot = ClientDroneManager.PilotingClientState.xRot;
             reusedState.yRot = ClientDroneManager.PilotingClientState.yRot;
-
+            reusedState.zRot =  Mth.lerp(partialTick, ClientDroneManager.PilotingClientState.rollO, ClientDroneManager.PilotingClientState.roll);
+            ;
         }else{
             reusedState.xRot = entity.getXRot(partialTick);
             reusedState.yRot = entity.getYRot(partialTick);
+            reusedState.zRot = Mth.lerp(partialTick, entity.getRollO(), entity.getRoll());
         }
         reusedState.rotorAngle = entity.getRotorAngle() + entity.getRotorSpeed() * partialTick;
     }

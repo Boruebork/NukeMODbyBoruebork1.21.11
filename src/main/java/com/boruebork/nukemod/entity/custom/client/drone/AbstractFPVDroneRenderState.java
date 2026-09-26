@@ -6,4 +6,5 @@ public class AbstractFPVDroneRenderState extends EntityRenderState {
     public float yRot;
     public float xRot;
     public float rotorAngle;
+    public float zRot;
 }

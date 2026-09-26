@@ -20,6 +20,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.lwjgl.glfw.GLFW;
 
 import static com.boruebork.nukemod.entity.custom.AbstractFPVDrone.CONTROLLER_DATA;
+import static com.boruebork.nukemod.entity.custom.AbstractFPVDrone.MAX_ROLL_DEGREES;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientDroneManager {
@@ -75,6 +76,8 @@ public class ClientDroneManager {
         public static float yRotO;
         public static float movementYRot;
         public static int currentPayloadMode = 0;
+        public static float roll;
+        public static float rollO;
 
         public static void turn(double yR, double xR) {
             float f = (float)xR * 0.15F;
@@ -85,6 +88,7 @@ public class ClientDroneManager {
             xRotO += f;
             yRotO += f1;
             xRotO = Mth.clamp(xRotO, -90.0F, 90.0F);
+            float targetRoll = Mth.clamp(-PilotingClientState.z * MAX_ROLL_DEGREES, -MAX_ROLL_DEGREES, MAX_ROLL_DEGREES);
         }
         public static boolean isPiloting() {
             return drone != null;
@@ -104,6 +108,7 @@ public class ClientDroneManager {
         //event.setRoll(90f);
         event.setYaw(PilotingClientState.yRot);
         event.setPitch(PilotingClientState.xRot);
+        event.setRoll((float) Mth.lerp(event.getPartialTick(), PilotingClientState.rollO, PilotingClientState.roll));
         PilotingClientState.drone.updateLookClientSide(PilotingClientState.xRot, PilotingClientState.yRot);
 
     }

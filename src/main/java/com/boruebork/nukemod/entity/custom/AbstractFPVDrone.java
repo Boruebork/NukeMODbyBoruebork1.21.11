@@ -1,17 +1,12 @@
 package com.boruebork.nukemod.entity.custom;
 
-import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.*;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
@@ -22,18 +17,29 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Comparator;
 import java.util.UUID;
 
 import static net.minecraft.world.entity.player.Player.MAX_HEALTH;
 
 public abstract class AbstractFPVDrone extends Entity {
+    public float roll = 0f;
+    public float rollO = 0f; // for interpolation, like xRotO/yRotO
+
+    // --- roll tuning ---
+    public static final float MAX_ROLL_DEGREES = 35f;  // full bank angle at max strafe input
+    private static final float ROLL_RESPONSE = 0.15f;   // how fast roll chases its target while actively strafing
+    private static final float ROLL_RECOVERY = 0.10f;   // how fast roll returns to level when idle/unpiloted
+    private static final float TURN_BANK_FACTOR = 2.0f; // degrees of extra bank per degree/tick of yaw rate
+    // tracks yaw independently of vanilla's yRotO, which client-side prediction never touches
+    // inside applyMovement — needed to compute yaw *rate* for the coordinated-turn bank below.
+    private float prevYawForBank = 0f;
+    private boolean prevYawForBankInit = false;
+
     private UUID controllerId;
     private int tickNum = 0;
     private float rotorSpeed = 0f;
@@ -49,6 +55,10 @@ public abstract class AbstractFPVDrone extends Entity {
             );
     public static final EntityDataAccessor<Float> HEALTH_DATA =
             SynchedEntityData.defineId(AbstractFPVDrone.class, EntityDataSerializers.FLOAT);
+    // Synced so third-party observers (anyone not piloting this drone) see it bank too,
+    // not just the pilot's own client.
+    public static final EntityDataAccessor<Float> ROLL_DATA =
+            SynchedEntityData.defineId(AbstractFPVDrone.class, EntityDataSerializers.FLOAT);
     private long ticketTimer = 0;
 
     public AbstractFPVDrone(EntityType<?> entityType, Level level) {
@@ -58,6 +68,7 @@ public abstract class AbstractFPVDrone extends Entity {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(CONTROLLER_DATA, this.controllerId == null ? "" : this.controllerId.toString());
         builder.define(HEALTH_DATA, getMaxHealth());
+        builder.define(ROLL_DATA, 0f);
     }
     public float getHealth() {
         return this.entityData.get(HEALTH_DATA);
@@ -86,6 +97,10 @@ public abstract class AbstractFPVDrone extends Entity {
                             ClientDroneManager.PilotingClientState.down,
                             ClientDroneManager.PilotingClientState.movementYRot
                     );
+                    // applyMovement() just recomputed this.roll — mirror it every tick so the
+                    // pilot's camera (onCameraAngles) actually sees it change, not just at mount time.
+                    ClientDroneManager.PilotingClientState.roll = this.roll;
+                    ClientDroneManager.PilotingClientState.rollO = this.rollO;
                 }
             }
         }else{
@@ -108,6 +123,23 @@ public abstract class AbstractFPVDrone extends Entity {
         // ease toward target so rotors spin up/down instead of snapping
         this.rotorSpeed += (targetSpeed - this.rotorSpeed) * 0.1f;
         this.rotorAngle = (this.rotorAngle + this.rotorSpeed) % 360f;
+
+        // --- roll sync/auto-level ---
+        // applyMovement() is the only place roll is actively *computed* (it runs on whichever
+        // side is authoritative for this tick: the piloting client, or the server when it
+        // receives an input packet). Everyone else just needs to mirror or settle it here.
+        if (level().isClientSide()) {
+            if (ClientDroneManager.PilotingClientState.drone != this) {
+                // third-party viewer (or nobody piloting): mirror the server-synced value
+                this.rollO = this.roll;
+                this.roll = this.entityData.get(ROLL_DATA);
+            }
+        } else if (!isBeingPiloted()) {
+            // server-authoritative auto-level: nobody's sending input packets right now
+            this.rollO = this.roll;
+            this.roll += (0f - this.roll) * ROLL_RECOVERY;
+            this.entityData.set(ROLL_DATA, this.roll);
+        }
     }
 
     @Override
@@ -208,6 +240,31 @@ public abstract class AbstractFPVDrone extends Entity {
         this.setDeltaMovement(localMove);
         this.move(MoverType.PLAYER, this.getDeltaMovement());
 
+        // --- roll ---
+        // Two contributions, combined and clamped:
+        //  1) strafe input  -> "banking" the same way a plane rolls to slide sideways
+        //  2) yaw *rate*    -> "coordinated turn" bank, same convention flight/space sims use:
+        //     the faster you're turning right now, the more you bank into that turn.
+        //     This is an arcade approximation (real turn-coordination depends on turn radius
+        //     and airspeed too), but it reads correctly and costs almost nothing to compute.
+        float currentYaw = this.getYRot();
+        float yawRate = 0f; // degrees turned this tick, signed
+        if (prevYawForBankInit) {
+            yawRate = Mth.wrapDegrees(currentYaw - prevYawForBank);
+        }
+        prevYawForBank = currentYaw;
+        prevYawForBankInit = true;
+
+        float strafeRollTarget = -strafe * MAX_ROLL_DEGREES;
+        float turnRollTarget = -yawRate * TURN_BANK_FACTOR;
+        float targetRoll = Mth.clamp(strafeRollTarget + turnRollTarget, -MAX_ROLL_DEGREES, MAX_ROLL_DEGREES);
+
+        this.rollO = this.roll;
+        this.roll += (targetRoll - this.roll) * ROLL_RESPONSE;
+        if (!level().isClientSide()) {
+            this.entityData.set(ROLL_DATA, this.roll);
+        }
+
         if (!level().isClientSide()) {
             boolean hitBlock = this.horizontalCollision || this.verticalCollision;
             boolean hitEntity = !level().getEntities(this, this.getBoundingBox(), e -> e.isPickable() && e != this).isEmpty();
@@ -239,6 +296,12 @@ public abstract class AbstractFPVDrone extends Entity {
     }
     public float getRotorSpeed() {
         return rotorSpeed;
+    }
+    public float getRoll() {
+        return roll;
+    }
+    public float getRollO() {
+        return rollO;
     }
 
     @Override

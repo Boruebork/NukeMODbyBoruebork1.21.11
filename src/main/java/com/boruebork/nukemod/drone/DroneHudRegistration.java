@@ -7,11 +7,13 @@ import com.boruebork.nukemod.entity.custom.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.entity.custom.DroneProjectile;
 import com.boruebork.nukemod.util.Colors;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.math.Axis;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.api.distmarker.Dist;
@@ -24,6 +26,11 @@ import java.util.Map;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class DroneHudRegistration {
+
+    // --- horizon line tuning ---
+    private static final int HORIZON_GAP = 16;     // px from center to the start of each segment
+    private static final int HORIZON_LENGTH = 22;  // px length of each segment
+
     @SubscribeEvent
     public static void registerLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(
@@ -40,10 +47,19 @@ public class DroneHudRegistration {
         int centerX = width / 2;
         int centerY = height / 2;
 
-        // Example: crosshair-style reticle
+        AbstractFPVDrone drone = ClientDroneManager.PilotingClientState.drone;
+
+        // Interpolate the same way the camera roll itself is interpolated (see onCameraAngles) —
+        // reading the raw un-interpolated roll here would reintroduce the 20Hz stair-step jitter
+        // we fixed on the camera earlier, just on the HUD instead.
+        float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
+        float roll = Mth.lerp(partialTick, drone.getRollO(), drone.getRoll());
+
+        renderHorizonLines(graphics, centerX, centerY, roll);
+
+        // Example: crosshair-style reticle — stays screen-fixed, drawn OUTSIDE the rotated block above
         graphics.hLine(centerX - 10, centerX + 10, centerY, Colors.GREEN);
         graphics.vLine(centerX, centerY - 10, centerY + 10, Colors.GREEN);
-
         // Example: corner brackets, letterbox bars, telemetry text, etc.
         graphics.drawString(
                 Minecraft.getInstance().font,
@@ -68,6 +84,31 @@ public class DroneHudRegistration {
             }
         }
     }
+
+    /**
+     * The two side segments FPV OSDs draw to represent the true horizon. The crosshair stays
+     * fixed to the screen; these rotate so the pilot can read bank angle at a glance even when
+     * the real horizon in the footage is obscured.
+     *
+     * Sign note: whether this should be `roll` or `-roll` depends on which direction your
+     * ViewportEvent#setRoll(...) call actually rotates the rendered scene on screen — that's
+     * engine/version-specific and I can't verify it from here. Test it: roll right (D) and
+     * watch these lines. If they visually tilt the WRONG way relative to the real in-game
+     * horizon behind them, flip the sign below.
+     */
+    private static void renderHorizonLines(GuiGraphics graphics, int centerX, int centerY, float roll) {
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(centerX, centerY);
+        // rotate() takes radians — roll is in degrees, hence the conversion. Without this,
+        // easing from 0 deg to ~35 deg actually sweeps ~5.6 full turns, which is the "spinning" you saw.
+        graphics.pose().rotate((float) Math.toRadians(-roll));
+
+        graphics.hLine(- HORIZON_GAP - HORIZON_LENGTH, - HORIZON_GAP, 0, Colors.GREEN);
+        graphics.hLine(HORIZON_GAP, HORIZON_GAP + HORIZON_LENGTH, 0, Colors.GREEN);
+
+        graphics.pose().popMatrix();
+    }
+
     private static Map<EntityType<?>, Identifier> texturesCache;
 
     private static Map<EntityType<?>, Identifier> textures() {
