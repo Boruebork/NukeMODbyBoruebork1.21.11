@@ -3,6 +3,7 @@ package com.boruebork.nukemod;
 import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.block.entity.renderer.GuidedMissileLauncherBER;
 import com.boruebork.nukemod.entity.ModEntities;
+import com.boruebork.nukemod.entity.custom.client.uav.RQ4Renderer;
 import com.boruebork.nukemod.entity.custom.client.fpv.FPVRenderer;
 import com.boruebork.nukemod.entity.custom.client.fpvint.FPVInterceptorRenderer;
 import com.boruebork.nukemod.entity.custom.client.grenade.GrenadeRenderer;
@@ -18,6 +19,8 @@ import com.boruebork.nukemod.gui.menu.EnricherScreen;
 import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherScreen;
 import com.boruebork.nukemod.gui.menu.IonizerScreen;
 import com.boruebork.nukemod.gui.menu.launcher.LauncherScreen;
+import com.boruebork.nukemod.ooblib.HitboxDefinitions;
+import com.boruebork.nukemod.ooblib.HitboxPart;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.neoforged.api.distmarker.Dist;
@@ -26,11 +29,14 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.util.Lazy;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.List;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = NukeModbyBoruebork.MODID, dist = Dist.CLIENT)
@@ -93,6 +99,10 @@ public class NukeModbyBorueborkClient {
                 ModEntities.BASIC_RADAR.get(),
                 BasicRadarRenderer::new
         );
+        event.registerEntityRenderer(
+                ModEntities.RQ4.get(),
+                RQ4Renderer::new
+        );
     }
 
     @SubscribeEvent
@@ -127,6 +137,16 @@ public class NukeModbyBorueborkClient {
         event.register(EXIT_DRONE_KEY.get());
         event.register(DRONE_ATTACK_MAPPING.get());
     }
-
+    @SubscribeEvent
+    public static void registerAll(FMLCommonSetupEvent event) {
+        HitboxDefinitions.register(
+                ModEntities.RQ4,
+                 List.of(
+                     HitboxPart.of("body", 0,4,-1,0.6f,0.6f,3),
+                     HitboxPart.of("left_wing", 2,4,-0.5f,1.38f,0.2f,0.5f),
+                     HitboxPart.of("left_wing", -2,4,-0.5f,1.38f,0.2f,0.5f)
+                )
+        );
+    }
 
 }

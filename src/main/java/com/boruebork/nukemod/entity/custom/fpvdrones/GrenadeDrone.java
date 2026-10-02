@@ -1,4 +1,4 @@
-package com.boruebork.nukemod.entity.custom;
+package com.boruebork.nukemod.entity.custom.fpvdrones;
 
 import com.boruebork.nukemod.entity.ModEntities;
 import net.minecraft.world.entity.EntityType;

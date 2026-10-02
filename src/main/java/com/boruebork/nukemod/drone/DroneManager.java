@@ -1,8 +1,8 @@
 package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
-import com.boruebork.nukemod.entity.custom.AbstractFPVProjectileLaunchingDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.DroneLaucnhProjectilePayload;
 import com.boruebork.nukemod.network.packet.ExitDronePacket;

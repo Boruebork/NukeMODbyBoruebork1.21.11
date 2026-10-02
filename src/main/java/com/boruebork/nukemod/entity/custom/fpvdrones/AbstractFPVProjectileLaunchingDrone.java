@@ -1,4 +1,4 @@
-package com.boruebork.nukemod.entity.custom;
+package com.boruebork.nukemod.entity.custom.fpvdrones;
 
 import com.boruebork.nukemod.entity.NukeMODEntityDataSerializers;
 import com.boruebork.nukemod.network.packet.SetProjectileModePayload;
@@ -11,8 +11,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 

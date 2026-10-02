@@ -1,7 +1,7 @@
 package com.boruebork.nukemod.drone;
 
-import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
-import com.boruebork.nukemod.entity.custom.AbstractFPVProjectileLaunchingDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.NotifyClientDroneExit;
 import net.minecraft.client.Minecraft;
@@ -19,8 +19,8 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.lwjgl.glfw.GLFW;
 
-import static com.boruebork.nukemod.entity.custom.AbstractFPVDrone.CONTROLLER_DATA;
-import static com.boruebork.nukemod.entity.custom.AbstractFPVDrone.MAX_ROLL_DEGREES;
+import static com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone.CONTROLLER_DATA;
+import static com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone.MAX_ROLL_DEGREES;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientDroneManager {
@@ -106,6 +106,7 @@ public class ClientDroneManager {
         if (!ClientDroneManager.PilotingClientState.isPiloting())
             return;
         //event.setRoll(90f);
+
         event.setYaw(PilotingClientState.yRot);
         event.setPitch(PilotingClientState.xRot);
         event.setRoll((float) Mth.lerp(event.getPartialTick(), PilotingClientState.rollO, PilotingClientState.roll));

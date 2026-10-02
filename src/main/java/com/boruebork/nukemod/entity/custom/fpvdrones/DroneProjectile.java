@@ -1,4 +1,4 @@
-package com.boruebork.nukemod.entity.custom;
+package com.boruebork.nukemod.entity.custom.fpvdrones;
 
 import net.minecraft.world.phys.Vec3;
 

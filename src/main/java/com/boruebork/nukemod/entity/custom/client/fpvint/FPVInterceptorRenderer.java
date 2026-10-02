@@ -1,9 +1,8 @@
 package com.boruebork.nukemod.entity.custom.client.fpvint;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.FPVInterceptorDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.FPVInterceptorDrone;
 import com.boruebork.nukemod.entity.custom.client.drone.AbstractFPVRenderer;
-import com.boruebork.nukemod.entity.custom.client.fpv.FPVModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;

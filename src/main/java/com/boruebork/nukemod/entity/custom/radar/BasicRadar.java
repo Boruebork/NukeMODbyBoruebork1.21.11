@@ -1,6 +1,6 @@
 package com.boruebork.nukemod.entity.custom.radar;
 
-import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.cow.Cow;

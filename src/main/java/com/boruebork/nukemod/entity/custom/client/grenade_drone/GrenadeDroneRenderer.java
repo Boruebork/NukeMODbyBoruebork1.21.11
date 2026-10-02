@@ -1,7 +1,7 @@
 package com.boruebork.nukemod.entity.custom.client.grenade_drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.GrenadeDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.GrenadeDrone;
 import com.boruebork.nukemod.entity.custom.client.drone.AbstractFPVRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;

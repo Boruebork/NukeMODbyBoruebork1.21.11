@@ -11,6 +11,7 @@ import com.boruebork.nukemod.item.ModCreativeModeTabs;
 import com.boruebork.nukemod.item.ModItems;
 import com.boruebork.nukemod.missile.MissileManager;
 import com.boruebork.nukemod.missile.MissileSavedData;
+import com.boruebork.nukemod.ooblib.HitboxDefinitions;
 import com.boruebork.nukemod.sound.ModSounds;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;

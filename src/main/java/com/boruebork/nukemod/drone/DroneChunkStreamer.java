@@ -1,7 +1,5 @@
 package com.boruebork.nukemod.drone;
 
-import com.boruebork.nukemod.entity.custom.AbstractFPVDrone;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
@@ -18,7 +16,6 @@ public class DroneChunkStreamer {
     private Map<UUID, ChunkPos> lastStreamedCenter = new HashMap<>();
     public void onExit(ServerPlayer player) {
         ChunkPos realPos = new ChunkPos(player.blockPosition());
-
         player.connection.send(new ClientboundSetChunkCacheCenterPacket(realPos.x, realPos.z));
         lastStreamedCenter.remove(player.getUUID());
 

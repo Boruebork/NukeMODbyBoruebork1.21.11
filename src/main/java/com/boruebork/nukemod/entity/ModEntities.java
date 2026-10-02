@@ -2,7 +2,13 @@ package com.boruebork.nukemod.entity;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.*;
+import com.boruebork.nukemod.entity.custom.fpvdrones.FPVDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.FPVInterceptorDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.GrenadeDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.RocketDrone;
 import com.boruebork.nukemod.entity.custom.radar.BasicRadar;
+//import com.boruebork.nukemod.entity.custom.uav.AbstractUAV;
+import com.boruebork.nukemod.entity.custom.uav.RQ4;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -29,6 +35,7 @@ public class ModEntities {
     public static ResourceKey<EntityType<?>> ROCKET_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rocket"));
     public static ResourceKey<EntityType<?>> ROCKET_DRONE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rocket_drone"));
     public static ResourceKey<EntityType<?>> BASIC_RADAR_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("basic_radar"));
+    public static ResourceKey<EntityType<?>> RQ4_KEy = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rq4"));
 
     public static final Supplier<EntityType<NukeEntity>> NUKE =
             ENTITY_TYPES.register("nuke", () -> EntityType.Builder.of(NukeEntity::new,
@@ -78,6 +85,12 @@ public class ModEntities {
                             MobCategory.MISC)
                     .sized(1, 2)   // blocks at which the server keeps sending updates
                     .build(BASIC_RADAR_KEY));
+
+    public static final Supplier<EntityType<RQ4>> RQ4 =
+            ENTITY_TYPES.register("rq4", () -> EntityType.Builder.of(RQ4::new,
+                            MobCategory.MISC)
+                    .sized(10, 10)   // blocks at which the server keeps sending updates
+                    .build(RQ4_KEy));
 
 
 

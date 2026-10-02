@@ -1,5 +1,7 @@
 package com.boruebork.nukemod.entity.custom;
 
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.DroneProjectile;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;

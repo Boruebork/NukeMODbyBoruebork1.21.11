@@ -12,6 +12,7 @@ import com.boruebork.nukemod.entity.custom.client.mushroom.MushroomModel;
 import com.boruebork.nukemod.entity.custom.client.nuke.NukeModel;
 import com.boruebork.nukemod.entity.custom.client.rocket.RocketModel;
 import com.boruebork.nukemod.entity.custom.client.rocket_drone.RocketDroneModel;
+import com.boruebork.nukemod.entity.custom.client.uav.RQ4Model;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -29,6 +30,6 @@ public class CommonEvents {
         event.registerLayerDefinition(GrenadeDroneModel.LAYER_LOCATION, GrenadeDroneModel::createBodyLayer);
         event.registerLayerDefinition(RocketDroneModel.LAYER_LOCATION, RocketDroneModel::createBodyLayer);
         event.registerLayerDefinition(RocketModel.LAYER_LOCATION, RocketModel::createBodyLayer);
-
+        event.registerLayerDefinition(RQ4Model.LAYER_LOCATION, RQ4Model::createBodyLayer);
     }
 }
