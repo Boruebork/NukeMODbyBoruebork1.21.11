@@ -89,7 +89,25 @@ public final class OBB {
         dest.set(i == 0 ? 1 : 0, i == 1 ? 1 : 0, i == 2 ? 1 : 0);
         return rotation.transform(dest);
     }
+    public static OBB fromAABB(AABB aabb) {
+        Vector3f center = new Vector3f(
+                (float) ((aabb.minX + aabb.maxX) * 0.5),
+                (float) ((aabb.minY + aabb.maxY) * 0.5),
+                (float) ((aabb.minZ + aabb.maxZ) * 0.5)
+        );
 
+        Vector3f halfExtents = new Vector3f(
+                (float) ((aabb.maxX - aabb.minX) * 0.5),
+                (float) ((aabb.maxY - aabb.minY) * 0.5),
+                (float) ((aabb.maxZ - aabb.minZ) * 0.5)
+        );
+
+        return new OBB(
+                center,
+                halfExtents,
+                new Quaternionf()
+        );
+    }
     /** Convenience: fills a 3x3 matrix whose columns are the world-space axes. */
     public Matrix3f basis(Matrix3f dest) {
         return dest.identity().rotate(rotation);

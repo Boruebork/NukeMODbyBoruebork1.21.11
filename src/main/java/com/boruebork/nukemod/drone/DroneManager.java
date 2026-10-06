@@ -1,7 +1,7 @@
 package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.DroneLaucnhProjectilePayload;
@@ -40,7 +40,7 @@ public class DroneManager {
         if (event.getEntity() instanceof Player player){
             if (getInstance().playerToDrone.containsKey(player.getUUID())){
                 Entity ent = player.level().getEntity(getInstance().playerToDrone.get(player.getUUID()));
-                if (ent instanceof AbstractFPVDrone drone){
+                if (ent instanceof AbstractDrone drone){
                     drone.stopOperating();
                 }
             }
@@ -48,17 +48,17 @@ public class DroneManager {
     }
 
     public Map<UUID, UUID> playerToDrone = new HashMap<>();
-    public Map<AbstractFPVDrone, UUID> drones = new HashMap<>();
+    public Map<AbstractDrone, UUID> drones = new HashMap<>();
     public static void updateDronePos(DroneInputPayload droneInputPayload, IPayloadContext context) {
         Entity ent = NukeModbyBoruebork.server.getLevel(Level.OVERWORLD).getEntity(droneInputPayload.droneId());
         if (ent != null)
         {
-            if (ent instanceof AbstractFPVDrone drone){
+            if (ent instanceof AbstractDrone drone){
                 drone.updatePosRot(droneInputPayload);
             }
         }
     }
-    public void addEntry(Player player, AbstractFPVDrone drone){
+    public void addEntry(Player player, AbstractDrone drone){
         playerToDrone.put(player.getUUID(), drone.getUUID());
         drones.put(drone, drone.getUUID());
     }
@@ -66,7 +66,7 @@ public class DroneManager {
         UUID droneId = DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
         Entity ent = context.player().level().getEntity(droneId);
         if (ent == null) return;
-        if (ent instanceof AbstractFPVDrone drone){
+        if (ent instanceof AbstractDrone drone){
             drone.stopOperating();
             getInstance().chunkStreamer.onExit((ServerPlayer) context.player());
         }
@@ -89,13 +89,13 @@ public class DroneManager {
     }
     @SubscribeEvent
     public static void serverTick(ServerTickEvent.Pre event) {
-        for (AbstractFPVDrone drone : getInstance().drones.keySet()){
+        for (AbstractDrone drone : getInstance().drones.keySet()){
             getInstance().updateChunkTicket(drone);
         }
     }
-    private final Map<AbstractFPVDrone, ChunkPos> lastTicketPositions = new HashMap<>();
+    private final Map<AbstractDrone, ChunkPos> lastTicketPositions = new HashMap<>();
 
-    private void updateChunkTicket(AbstractFPVDrone drone) {
+    private void updateChunkTicket(AbstractDrone drone) {
         if (!drone.isBeingPiloted()) {
             releaseTicket(drone);
             return;
@@ -116,7 +116,7 @@ public class DroneManager {
         lastTicketPositions.put(drone, currentPos);
     }
 
-    private void releaseTicket(AbstractFPVDrone drone) {
+    private void releaseTicket(AbstractDrone drone) {
         ChunkPos lastPos = lastTicketPositions.remove(drone);
         if (lastPos != null && drone.level() instanceof ServerLevel serverLevel) {
             int radius = serverLevel.getServer().getPlayerList().getSimulationDistance();
@@ -126,7 +126,7 @@ public class DroneManager {
         }
     }
 
-    public AbstractFPVDrone getPilotedDrone(ServerPlayer player) {
-        return (AbstractFPVDrone) player.level().getEntity(playerToDrone.get(player.getUUID()));
+    public AbstractDrone getPilotedDrone(ServerPlayer player) {
+        return (AbstractDrone) player.level().getEntity(playerToDrone.get(player.getUUID()));
     }
 }

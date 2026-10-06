@@ -5,27 +5,32 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 
 public class RQ4 extends AbstractUAV {
-    public RQ4(EntityType<?> entityType, Level level) {
-        super(entityType, level);
+    @Override
+    protected float getMinSpeed() {
+        return 0;
     }
 
     @Override
-    protected float getMaxHealth() {
-        return 6;
+    protected float getMaxSpeed() {
+        return 0.4f;
     }
 
     @Override
-    protected float getVerticalSpeedModifier() {
+    protected float getAcceleration() {
+        return 0.05f;
+    }
+
+    @Override
+    protected float getYawPerRollDegreePerTick() {
         return 1;
     }
 
     @Override
-    protected float getHorizontalSpeedModifier() {
-        return 0.3f;
+    protected float getMaxPitchRatePerTick() {
+        return 1;
     }
 
-    @Override
-    protected float getOnHitExplosionRadius() {
-        return 0;
+    public RQ4(EntityType<?> entityType, Level level) {
+        super(entityType, level);
     }
 }

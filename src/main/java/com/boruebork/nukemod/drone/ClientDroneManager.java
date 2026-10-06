@@ -1,6 +1,5 @@
 package com.boruebork.nukemod.drone;
 
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.NotifyClientDroneExit;
@@ -65,7 +64,7 @@ public class ClientDroneManager {
     }
 
     public static class PilotingClientState{
-        public static AbstractFPVDrone drone;
+        public static com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone drone;
         public static float x;
         public static float z;
         public static boolean up;

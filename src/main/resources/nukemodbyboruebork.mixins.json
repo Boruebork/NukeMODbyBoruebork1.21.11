@@ -9,6 +9,7 @@
     "TrackedEntityMixin"
   ],
   "client": [
+    "CameraMixin",
     "LevelRendererMixin",
     "MouseHandlerMixin"
   ],

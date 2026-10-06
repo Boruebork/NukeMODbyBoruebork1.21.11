@@ -23,6 +23,7 @@ import com.boruebork.nukemod.ooblib.HitboxDefinitions;
 import com.boruebork.nukemod.ooblib.HitboxPart;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -34,6 +35,7 @@ import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.util.Lazy;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -141,10 +143,10 @@ public class NukeModbyBorueborkClient {
     public static void registerAll(FMLCommonSetupEvent event) {
         HitboxDefinitions.register(
                 ModEntities.RQ4,
-                 List.of(
-                     HitboxPart.of("body", 0,4,-1,0.6f,0.6f,3),
-                     HitboxPart.of("left_wing", 2,4,-0.5f,1.38f,0.2f,0.5f),
-                     HitboxPart.of("left_wing", -2,4,-0.5f,1.38f,0.2f,0.5f)
+                List.of(
+                        HitboxPart.of("body", 0,1,-2.4f,0.6f,0.6f,3,  new Vector3f(0,0,0)),
+                        HitboxPart.of("left_wing", 2,1,-1.6f,1.38f,0.2f,0.5f,  new Vector3f(0,0,0)),
+                        HitboxPart.of("left_wing", -2,1,-1.6f,1.38f,0.2f,0.5f,  new Vector3f(0,0,0))
                 )
         );
     }

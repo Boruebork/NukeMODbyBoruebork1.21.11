@@ -2,6 +2,7 @@ package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.ModEntities;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.util.Colors;
@@ -42,7 +43,7 @@ public class DroneHudRegistration {
         int centerX = width / 2;
         int centerY = height / 2;
 
-        AbstractFPVDrone drone = ClientDroneManager.PilotingClientState.drone;
+        AbstractDrone drone = ClientDroneManager.PilotingClientState.drone;
 
         // Interpolate the same way the camera roll itself is interpolated (see onCameraAngles) —
         // reading the raw un-interpolated roll here would reintroduce the 20Hz stair-step jitter
@@ -61,11 +62,12 @@ public class DroneHudRegistration {
                 "ALT: " + (int) ClientDroneManager.PilotingClientState.drone.getY(),
                 10, height - 20, Colors.GREEN
         );
-        graphics.drawString(
+        if (ClientDroneManager.PilotingClientState.drone instanceof AbstractFPVDrone)
+            graphics.drawString(
                 Minecraft.getInstance().font,
                 "HEALTH: " + ClientDroneManager.PilotingClientState.drone.getEntityData().get(AbstractFPVDrone.HEALTH_DATA),
                 width -100, height - 20, Colors.GREEN
-        );
+            );
         if (ClientDroneManager.PilotingClientState.drone instanceof AbstractFPVProjectileLaunchingDrone pDrone){
             // add weapons preview
             int i = 0;

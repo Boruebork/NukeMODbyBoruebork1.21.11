@@ -1,75 +1,60 @@
 package com.boruebork.nukemod.entity.custom.fpvdrones;
 
-import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.drone.DroneManager;
-import com.boruebork.nukemod.network.packet.DroneInputPayload;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.*;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.UUID;
 
 import static net.minecraft.world.entity.player.Player.MAX_HEALTH;
 
-public abstract class AbstractFPVDrone extends Entity {
-    public float roll = 0f;
-    public float rollO = 0f; // for interpolation, like xRotO/yRotO
+/**
+ * FPV combat drone: explosion-only health, spinning rotor animation, and a
+ * strafe/yaw-rate-banking flight model. Piloting and roll are handled by
+ * {@link com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone}; this class only supplies what's specific to this
+ * particular kind of drone.
+ */
+public abstract class AbstractFPVDrone extends com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone {
 
-    // --- roll tuning ---
-    public static final float MAX_ROLL_DEGREES = 35f;  // full bank angle at max strafe input
-    private static final float ROLL_RESPONSE = 0.15f;   // how fast roll chases its target while actively strafing
-    private static final float ROLL_RECOVERY = 0.10f;   // how fast roll returns to level when idle/unpiloted
-    private static final float TURN_BANK_FACTOR = 2.0f; // degrees of extra bank per degree/tick of yaw rate
-    // tracks yaw independently of vanilla's yRotO, which client-side prediction never touches
-    // inside applyMovement — needed to compute yaw *rate* for the coordinated-turn bank below.
-    private float prevYawForBank = 0f;
-    private boolean prevYawForBankInit = false;
-
-    private UUID controllerId;
-    private int tickNum = 0;
-    private float rotorSpeed = 0f;
-    private float rotorAngle = 0f;
-    private static final int TICKET_RADIUS = 3; // chunks; ~48 blocks
-    private static final int TICKET_LEVEL = 31; // see note below on what this controls
-    public static final EntityDataAccessor<String> CONTROLLER_DATA =
-            SynchedEntityData.defineId(
-                    // The class of the entity.
-                    AbstractFPVDrone.class,
-                    // The entity data accessor type.
-                    EntityDataSerializers.STRING
-            );
+    // --- health ---
     public static final EntityDataAccessor<Float> HEALTH_DATA =
             SynchedEntityData.defineId(AbstractFPVDrone.class, EntityDataSerializers.FLOAT);
-    // Synced so third-party observers (anyone not piloting this drone) see it bank too,
-    // not just the pilot's own client.
-    public static final EntityDataAccessor<Float> ROLL_DATA =
-            SynchedEntityData.defineId(AbstractFPVDrone.class, EntityDataSerializers.FLOAT);
+
+    // --- rotor animation ---
+    private float rotorSpeed = 0f;
+    private float rotorAngle = 0f;
+
+    // --- lift-off / chunk ticketing ---
+    private int tickNum = 0;
     private long ticketTimer = 0;
+    private static final int TICKET_RADIUS = 3; // chunks; ~48 blocks
+    private static final int TICKET_LEVEL = 31; // see note below on what this controls
+    // (TICKET_RADIUS/TICKET_LEVEL aren't consumed anywhere in this excerpt -- if you've got
+    // a chunk-ticket method elsewhere that reads them, it should move here too.)
+
+    // --- flight model: coordinated-turn banking ---
+    private static final float TURN_BANK_FACTOR = 2.0f; // degrees of extra bank per degree/tick of yaw rate
+    // tracks yaw independently of vanilla's yRotO, which client-side prediction never touches
+    // inside applyMovement -- needed to compute yaw *rate* for the coordinated-turn bank below.
+    private float prevYawForBank = 0f;
+    private boolean prevYawForBankInit = false;
 
     public AbstractFPVDrone(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        builder.define(CONTROLLER_DATA, this.controllerId == null ? "" : this.controllerId.toString());
+        super.defineSynchedData(builder);
         builder.define(HEALTH_DATA, getMaxHealth());
-        builder.define(ROLL_DATA, 0f);
     }
+
     public float getHealth() {
         return this.entityData.get(HEALTH_DATA);
     }
@@ -77,76 +62,41 @@ public abstract class AbstractFPVDrone extends Entity {
     public void setHealth(float health) {
         this.entityData.set(HEALTH_DATA, Mth.clamp(health, 0.0F, MAX_HEALTH));
     }
+
     @Override
     public void tick() {
-        super.tick();
-        if (level().isClientSide()) {
-            if (!this.entityData.get(CONTROLLER_DATA).isEmpty()) {
-                if (ClientDroneManager.PilotingClientState.drone == null) {
-                    ClientDroneManager.PilotingClientState.drone = this;
-                    ClientDroneManager.PilotingClientState.yRot = this.getYRot();
-                    ClientDroneManager.PilotingClientState.xRot = this.getXRot();
-                    Minecraft.getInstance().setCameraEntity(this);
-                }
+        super.tick(); // AbstractDrone: Entity#tick() + camera piloting + roll sync/auto-level
+        // NOTE: this reorders things slightly vs. the original single-class version -- roll
+        // sync/auto-level now runs *before* the ticketTimer/tickNum/rotor block below rather
+        // than after. Harmless: none of these touch roll, and roll's auto-level doesn't
+        // depend on them either, so the two blocks are independent either way.
 
-                if (ClientDroneManager.PilotingClientState.drone == this) {
-                    applyMovement(
-                            ClientDroneManager.PilotingClientState.z,
-                            ClientDroneManager.PilotingClientState.x,
-                            ClientDroneManager.PilotingClientState.up,
-                            ClientDroneManager.PilotingClientState.down,
-                            ClientDroneManager.PilotingClientState.movementYRot
-                    );
-                    // applyMovement() just recomputed this.roll — mirror it every tick so the
-                    // pilot's camera (onCameraAngles) actually sees it change, not just at mount time.
-                    ClientDroneManager.PilotingClientState.roll = this.roll;
-                    ClientDroneManager.PilotingClientState.rollO = this.rollO;
+        if (!level().isClientSide()) {
+            if (isBeingPiloted()) {
+                if (this.ticketTimer > 0L) {
+                    this.ticketTimer--;
                 }
-            }
-        }else{
-            if (level() instanceof ServerLevel sl) {
-                if (isBeingPiloted()) {
-                    if (this.ticketTimer > 0L) {
-                        this.ticketTimer--;
-                    }
-                } else {
-                    this.ticketTimer = 0L;   // will re-arm instantly on next piloting
-                }
+            } else {
+                this.ticketTimer = 0L; // will re-arm instantly on next piloting
             }
 
-            if (this.tickNum == 0){
+            if (this.tickNum == 0) {
                 this.move(MoverType.SELF, new Vec3(0, 0.5, 0));
             }
             tickNum++;
         }
+
         float targetSpeed = isBeingPiloted() ? 45f : 0f; // degrees/tick at full spin
         // ease toward target so rotors spin up/down instead of snapping
         this.rotorSpeed += (targetSpeed - this.rotorSpeed) * 0.1f;
         this.rotorAngle = (this.rotorAngle + this.rotorSpeed) % 360f;
-
-        // --- roll sync/auto-level ---
-        // applyMovement() is the only place roll is actively *computed* (it runs on whichever
-        // side is authoritative for this tick: the piloting client, or the server when it
-        // receives an input packet). Everyone else just needs to mirror or settle it here.
-        if (level().isClientSide()) {
-            if (ClientDroneManager.PilotingClientState.drone != this) {
-                // third-party viewer (or nobody piloting): mirror the server-synced value
-                this.rollO = this.roll;
-                this.roll = this.entityData.get(ROLL_DATA);
-            }
-        } else if (!isBeingPiloted()) {
-            // server-authoritative auto-level: nobody's sending input packets right now
-            this.rollO = this.roll;
-            this.roll += (0f - this.roll) * ROLL_RECOVERY;
-            this.entityData.set(ROLL_DATA, this.roll);
-        }
     }
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
         if (this.isInvulnerableTo(level, damageSource)) return false;
 
-        // only explosions hurt it — bullets, punches, fall damage etc. still do nothing
+        // only explosions hurt it -- bullets, punches, fall damage etc. still do nothing
         if (!damageSource.is(DamageTypeTags.IS_EXPLOSION)) return false;
 
         float newHealth = this.getHealth() - amount;
@@ -156,7 +106,6 @@ public abstract class AbstractFPVDrone extends Entity {
         }
         return true;
     }
-
 
     private boolean isInvulnerableTo(ServerLevel level, DamageSource damageSource) {
         if (damageSource.is(DamageTypeTags.IS_EXPLOSION)) return false;
@@ -168,54 +117,15 @@ public abstract class AbstractFPVDrone extends Entity {
         this.stopOperating();
         this.discard();
     }
-    @Override
-    public InteractionResult interact(Player player, InteractionHand hand) {
-        if (this.level().isClientSide()) {
-            return InteractionResult.FAIL;
-        }
-        if (!level().isClientSide()){
-            if (this.entityData.get(CONTROLLER_DATA) != "") return super.interact(player, hand);
-            this.controllerId = player.getUUID();
-            DroneManager.getInstance().addEntry(player, this);
-            this.entityData.set(CONTROLLER_DATA, this.controllerId.toString());
-            return InteractionResult.SUCCESS;
-        }
-        return super.interact(player, hand);
-    }
-    @Override
-    public boolean isPickable() {
-        return true;
-    }
-
-    public void updatePosRot(DroneInputPayload data) {
-        this.xRotO = getXRot();
-        this.setXRot(data.xRot());
-        this.yRotO = getYRot();
-        this.setYRot(data.yRot());
-        applyMovement(data.dz(), data.forward(), data.up(), data.down(), data.yRot());
-    }
-    public void stopOperating() {
-        if (controllerId == null) return;
-        Player player = this.level().getPlayerByUUID(controllerId);
-        this.controllerId = null;
-        this.entityData.set(CONTROLLER_DATA, "");
-        if (player == null) return;
-        DroneManager.getInstance().playerToDrone.remove(player.getUUID());
-    }
 
     @Override
-    public boolean isClientAuthoritative() {
-        return level().isClientSide() && ClientDroneManager.PilotingClientState.drone == this;
-
-    }
-    // In AbstractFPVDrone — shared by both client prediction and server authority
-    public void applyMovement(float forward, float strafe, boolean up, boolean down, float yRot) {
+    protected void applyMovement(float forward, float strafe, boolean up, boolean down, float yRot, float xRot) {
         if (!level().isClientSide()) {
             this.yRotO = this.getYRot();
             this.setYRot(yRot);
         }
         // build forward direction from BOTH yaw and pitch, so looking down
-        // while moving forward naturally dives — same math as Entity#getViewVector / elytra flight
+        // while moving forward naturally dives -- same math as Entity#getViewVector / elytra flight
         float yawRad = this.getYRot() * Mth.DEG_TO_RAD;
         float pitchRad = this.getXRot() * Mth.DEG_TO_RAD;
 
@@ -226,7 +136,7 @@ public abstract class AbstractFPVDrone extends Entity {
 
         // forward vector tilted by pitch
         Vec3 forwardVec = new Vec3(sinYaw * cosPitch, sinPitch, cosYaw * cosPitch);
-        // strafe stays horizontal-only — sideways movement shouldn't dive/climb from pitch
+        // strafe stays horizontal-only -- sideways movement shouldn't dive/climb from pitch
         Vec3 strafeVec = new Vec3(cosYaw, 0, -sinYaw);
 
         Vec3 localMove = forwardVec.scale(forward * getHorizontalSpeedModifier()).add(strafeVec.scale(strafe * getHorizontalSpeedModifier()));
@@ -240,8 +150,8 @@ public abstract class AbstractFPVDrone extends Entity {
         this.setDeltaMovement(localMove);
         this.move(MoverType.PLAYER, this.getDeltaMovement());
 
-        // --- roll ---
-        // Two contributions, combined and clamped:
+        // --- roll target ---
+        // Two contributions, combined and left for updateRollTowards() to clamp:
         //  1) strafe input  -> "banking" the same way a plane rolls to slide sideways
         //  2) yaw *rate*    -> "coordinated turn" bank, same convention flight/space sims use:
         //     the faster you're turning right now, the more you bank into that turn.
@@ -257,13 +167,7 @@ public abstract class AbstractFPVDrone extends Entity {
 
         float strafeRollTarget = -strafe * MAX_ROLL_DEGREES;
         float turnRollTarget = -yawRate * TURN_BANK_FACTOR;
-        float targetRoll = Mth.clamp(strafeRollTarget + turnRollTarget, -MAX_ROLL_DEGREES, MAX_ROLL_DEGREES);
-
-        this.rollO = this.roll;
-        this.roll += (targetRoll - this.roll) * ROLL_RESPONSE;
-        if (!level().isClientSide()) {
-            this.entityData.set(ROLL_DATA, this.roll);
-        }
+        updateRollTowards(strafeRollTarget + turnRollTarget);
 
         if (!level().isClientSide()) {
             boolean hitBlock = this.horizontalCollision || this.verticalCollision;
@@ -279,39 +183,14 @@ public abstract class AbstractFPVDrone extends Entity {
         this.level().explode(this, this.getX(), this.getY(), this.getZ(), getOnHitExplosionRadius(), Level.ExplosionInteraction.TNT);
         this.stopOperating();
         this.discard();
-    }// Client-side, called every FRAME (e.g. from ClientTickEvent or a mouse-move hook),
-    // NOT from Entity#tick()
-    public void updateLookClientSide(double mouseYaw, double mousePitch) {
-        if (ClientDroneManager.PilotingClientState.drone != this) return;
-
-        this.yRotO = this.getYRot();
-        this.xRotO = this.getXRot();
-        this.setYRot((float) mousePitch);
-        this.setXRot((float) mouseYaw);
     }
-    public boolean isBeingPiloted(){
-        return !this.entityData.get(CONTROLLER_DATA).isEmpty();
-    }public float getRotorAngle() {
+
+    public float getRotorAngle() {
         return rotorAngle;
     }
+
     public float getRotorSpeed() {
         return rotorSpeed;
-    }
-    public float getRoll() {
-        return roll;
-    }
-    public float getRollO() {
-        return rollO;
-    }
-
-    @Override
-    protected void addAdditionalSaveData(ValueOutput valueOutput) {
-
-    }
-
-    @Override
-    protected void readAdditionalSaveData(ValueInput valueInput) {
-
     }
 
     protected abstract float getMaxHealth();

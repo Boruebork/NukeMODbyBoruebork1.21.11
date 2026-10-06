@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.DroneManager;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -24,7 +25,7 @@ public abstract class ChunkMapMixin {
     )
     private SectionPos drone$fakeSectionPosForTracking(EntityAccess entity) {
         if (entity instanceof ServerPlayer player) {
-            AbstractFPVDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+            AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
             if (drone != null) {
                 return SectionPos.of(BlockPos.containing(drone.getX(), drone.getY(), drone.getZ()));
             }
@@ -40,7 +41,7 @@ public abstract class ChunkMapMixin {
             )
     )
     private ChunkPos drone$fakeChunkPosForTrackingView(ServerPlayer player) {
-        AbstractFPVDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+        AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
         if (drone != null) {
             return new ChunkPos(drone.blockPosition());
         }

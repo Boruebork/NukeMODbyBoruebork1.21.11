@@ -89,7 +89,7 @@ public class ModEntities {
     public static final Supplier<EntityType<RQ4>> RQ4 =
             ENTITY_TYPES.register("rq4", () -> EntityType.Builder.of(RQ4::new,
                             MobCategory.MISC)
-                    .sized(10, 10)   // blocks at which the server keeps sending updates
+                    .sized(1f, 1)//.eyeHeight(1.0f)   // blocks at which the server keeps sending updates
                     .build(RQ4_KEy));
 
 
