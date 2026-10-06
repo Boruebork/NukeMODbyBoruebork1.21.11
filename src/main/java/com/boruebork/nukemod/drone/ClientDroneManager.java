@@ -3,6 +3,7 @@ package com.boruebork.nukemod.drone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import com.boruebork.nukemod.network.packet.NotifyClientDroneExit;
+import com.boruebork.nukemod.ooblib.AbstractUAV;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.util.Mth;
@@ -16,6 +17,7 @@ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.joml.Quaternionf;
 import org.lwjgl.glfw.GLFW;
 
 import static com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone.CONTROLLER_DATA;
@@ -25,25 +27,23 @@ import static com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone.MAX
 public class ClientDroneManager {
     @SubscribeEvent
     public static void onMovementInput(MovementInputUpdateEvent event) {
-        // your own client-side tracking
+        if (Minecraft.getInstance().isPaused()) return;
         var player = Minecraft.getInstance().player;
         if (PilotingClientState.drone == null) return;
         if (player == null) {
-            PilotingClientState.drone = null; // stop piloting, nothing to control it with
+            PilotingClientState.drone = null;
             return;
         }
         ClientInput input = event.getInput();
-        // stash what the player pressed for the drone, then cancel their own movement
         PilotingClientState.x = input.getMoveVector().x;
         PilotingClientState.z = input.getMoveVector().y;
         PilotingClientState.up = Minecraft.getInstance().options.keyJump.isDown();
         PilotingClientState.down = Minecraft.getInstance().options.keyShift.isDown();
-
-        //input.forwardImpulse = 0;
-        //input.leftImpulse = 0;
     }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event){
+        if (Minecraft.getInstance().isPaused()) return;
         if (PilotingClientState.drone == null)  return;
         if (Minecraft.getInstance().player == null) return;
         ClientPacketDistributor.sendToServer(new DroneInputPayload(
@@ -77,6 +77,9 @@ public class ClientDroneManager {
         public static int currentPayloadMode = 0;
         public static float roll;
         public static float rollO;
+        public static float rollW;
+        public static float yW;
+        public static float xW;
 
         public static void turn(double yR, double xR) {
             float f = (float)xR * 0.15F;
@@ -93,25 +96,52 @@ public class ClientDroneManager {
             return drone != null;
         }
         public void updateLookClientSide(double mouseYaw, double mousePitch) {
-
             yRotO = yRot;
             xRotO = xRot;
             yRot = (float) mouseYaw;
             xRot = (float) mousePitch;
         }
     }
+
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
-        if (!ClientDroneManager.PilotingClientState.isPiloting())
+        if (Minecraft.getInstance().isPaused()) return;
+        if (!PilotingClientState.isPiloting())
             return;
-        //event.setRoll(90f);
 
-        event.setYaw(PilotingClientState.yRot);
-        event.setPitch(PilotingClientState.xRot);
-        event.setRoll((float) Mth.lerp(event.getPartialTick(), PilotingClientState.rollO, PilotingClientState.roll));
-        PilotingClientState.drone.updateLookClientSide(PilotingClientState.xRot, PilotingClientState.yRot);
+        if (PilotingClientState.drone instanceof AbstractUAV uav) {
+            event.setYaw(PilotingClientState.yRot);
+            event.setPitch(PilotingClientState.xRot);
+            event.setRoll(
+                    (float) Mth.lerp(
+                            event.getPartialTick(),
+                            PilotingClientState.rollO,
+                            PilotingClientState.roll
+                    )
+            );
 
+            PilotingClientState.drone.updateLookClientSide(
+                    PilotingClientState.xRot,
+                    PilotingClientState.yRot
+            );
+        } else {
+            event.setYaw(PilotingClientState.yRot);
+            event.setPitch(PilotingClientState.xRot);
+            event.setRoll(
+                    (float) Mth.lerp(
+                            event.getPartialTick(),
+                            PilotingClientState.rollO,
+                            PilotingClientState.roll
+                    )
+            );
+
+            PilotingClientState.drone.updateLookClientSide(
+                    PilotingClientState.xRot,
+                    PilotingClientState.yRot
+            );
+        }
     }
+
     @SubscribeEvent
     public static void onClientTickPre(ClientTickEvent.Pre event) {
 
@@ -119,7 +149,6 @@ public class ClientDroneManager {
             PilotingClientState.drone = null;
             return;
         }
-        //System.out.println("Client drone: " + PilotingClientState.drone+ "!");
         if (PilotingClientState.drone == null) return;
         if (PilotingClientState.drone.getEntityData().get(CONTROLLER_DATA).isEmpty() || PilotingClientState.drone.getRemovalReason() == Entity.RemovalReason.DISCARDED){
             PilotingClientState.drone = null;
@@ -127,6 +156,7 @@ public class ClientDroneManager {
         }
         PilotingClientState.movementYRot = PilotingClientState.yRot;
     }
+
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
         if (PilotingClientState.drone == null) return;

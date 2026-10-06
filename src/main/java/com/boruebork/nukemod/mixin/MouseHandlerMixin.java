@@ -3,6 +3,7 @@ package com.boruebork.nukemod.mixin;
 import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
+import com.boruebork.nukemod.ooblib.AbstractUAV;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.util.SmoothDouble;
@@ -53,7 +54,6 @@ public class MouseHandlerMixin {
             }
 
             minecraft.getTutorial().onMouse(d0, d1);
-
             ClientDroneManager.PilotingClientState.turn(
                     (Boolean) this.minecraft.options.invertMouseX().get() ? -d0 : d0,
                     (Boolean) this.minecraft.options.invertMouseY().get() ? -d1 : d1

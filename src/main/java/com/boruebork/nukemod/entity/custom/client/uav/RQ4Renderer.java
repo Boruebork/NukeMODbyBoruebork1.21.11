@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.entity.custom.client.uav;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
+import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.entity.custom.uav.RQ4;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -11,6 +12,8 @@ import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
+import org.joml.Quaternionf;
 
 public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
     private RQ4Model model;
@@ -51,6 +54,15 @@ public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
         );
         poseStack.popPose();
     }
+    public Quaternionf getCameraRotation(float partialTick) {
+        float yaw = Mth.rotLerp(partialTick, ClientDroneManager.PilotingClientState.yRotO, ClientDroneManager.PilotingClientState.yRot);
+        float pitch = Mth.lerp(partialTick, ClientDroneManager.PilotingClientState.xRotO, ClientDroneManager.PilotingClientState.xRot);
+        float roll = Mth.lerp(partialTick, ClientDroneManager.PilotingClientState.rollO, ClientDroneManager.PilotingClientState.roll);
+        return new Quaternionf()
+                .rotateY((float) Math.toRadians(-yaw))
+                .rotateX((float) Math.toRadians(pitch))
+                .rotateZ((float) Math.toRadians(roll));
+    }
 
     private Identifier getTexture() {
         return Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID, "textures/entity/rq4.png");
@@ -65,9 +77,15 @@ public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
     public void extractRenderState(RQ4 entity, RQ4RenderState reusedState, float partialTick) {
         super.extractRenderState(entity, reusedState, partialTick);
         // Same orientation as OBBs / camera. PilotingClientState will desync the mesh.
-        reusedState.xRot = entity.getRenderPitch(partialTick);
-        reusedState.yRot = entity.getRenderYaw(partialTick);
-        reusedState.zRot = entity.getRenderRoll(partialTick);
-        reusedState.cameraPos = entity.getCameraPosition(partialTick);
+        if (ClientDroneManager.PilotingClientState.drone == entity){
+            reusedState.xRot = ClientDroneManager.PilotingClientState.xRot;
+            reusedState.yRot = ClientDroneManager.PilotingClientState.yRot;
+            reusedState.zRot =  Mth.lerp(partialTick, ClientDroneManager.PilotingClientState.rollO, ClientDroneManager.PilotingClientState.roll);
+            reusedState.cameraPos = entity.getCameraPosition(partialTick);
+        }else{
+            reusedState.xRot = entity.getXRot(partialTick);
+            reusedState.yRot = entity.getYRot(partialTick);
+            reusedState.zRot = Mth.lerp(partialTick, entity.getRollO(), entity.getRoll());
+        }
     }
 }
