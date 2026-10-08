@@ -3,6 +3,8 @@ package com.boruebork.nukemod.ooblib;
 import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
 import com.boruebork.nukemod.network.packet.FixedWingInputPayload;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -10,13 +12,14 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import java.util.List;
 
@@ -25,7 +28,8 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     private static final double COLLISION_SKIN = 1.0E-3;
 
     private float speed = 0f;
-
+    private BlockPos patrolCenter;
+    private Entity patrolEntity;
     private float yawWanted;
     private float yawWantedO;
     private float pitchWanted;
@@ -70,7 +74,13 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
                 MAX_ROLL_DEGREES
         );*/
         if (level().isClientSide()) {
-            applyWantedRotation();
+            if (ClientDroneManager.PilotingClientState.mode == ClientDroneManager.PilotingClientState.PilotingMode.FIXED) {
+                applyWantedRotation();
+            } else if (ClientDroneManager.PilotingClientState.mode == ClientDroneManager.PilotingClientState.PilotingMode.PATROL) {
+                updatePatrolRotation();
+                applyWantedRotation();
+            }
+
 
         } else {
             applyServerRotation(targetPitch, targetYaw);
@@ -87,13 +97,106 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         Vec3 actualMovement = moveWithOBBTerrainCollision(forwardVec.scale(this.speed));
         this.setDeltaMovement(actualMovement);
     }
+    private double patrolRadius = 50.0;
+    private double patrolAltitude = 100.0;
+
+    private double patrolCorrection = 0.05;
+    private double patrolAltitudeCorrection = 0.05;
+
+    private void updatePatrolRotation() {
+        //System.err.println("uwu");
+        BlockPos center = getPatrolCenter();
+        //System.err.println(center);
+        if (center == null)
+            return;
+
+        Vec3 offset = position().subtract(new Vec3(center));
+
+        // Horizontal distance from patrol center
+        Vec3 horizontalOffset = new Vec3(
+                offset.x,
+                0.0,
+                offset.z
+        );
+
+        double distance = horizontalOffset.length();
+
+        if (distance < 0.001)
+            return;
+
+        Vec3 radial = horizontalOffset.normalize();
+
+        // Tangent direction around the circle.
+        Vec3 tangent = new Vec3(
+                -radial.z,
+                0.0,
+                radial.x
+        );
+
+        /*
+         * Correct the radius.
+         *
+         * If we're outside the desired radius -> move inward.
+         * If we're inside -> move outward.
+         */
+        double radiusError = distance - patrolRadius;
+
+        Vec3 correction = radial.scale(
+                -Mth.clamp(radiusError * patrolCorrection,
+                        -1.0,
+                        1.0)
+        );
+
+        Vec3 desiredDirection = tangent.add(correction);
+
+        if (desiredDirection.lengthSqr() < 0.001)
+            return;
+
+        desiredDirection = desiredDirection.normalize();
+        // Desired altitude.
+        double altitudeError =
+                (center.getY() + patrolAltitude) - getY();
+        float patrolAltitudeCorrection = 0.1f;
+        double verticalCorrection = Mth.clamp(
+                altitudeError * patrolAltitudeCorrection,
+                -1.0,
+                1.0
+        );
+
+        desiredDirection = new Vec3(
+                desiredDirection.x,
+                verticalCorrection,
+                desiredDirection.z
+        ).normalize();
+
+        // Convert direction to your Minecraft rotation convention.
+        float desiredYaw = (float) Math.toDegrees(
+                Math.atan2(
+                        -desiredDirection.x,
+                        desiredDirection.z
+                )
+        );
+
+        float desiredPitch = (float) Math.toDegrees(
+                Math.asin(-desiredDirection.y)
+        );
+
+        this.yawWanted = desiredYaw;
+        this.pitchWanted = Mth.clamp(
+                desiredPitch,
+                -90.0f,
+                90.0f
+        );
+        ClientDroneManager.PilotingClientState.yW = this.yawWanted;
+        ClientDroneManager.PilotingClientState.xW = this.pitchWanted;
+    }
     protected void applyServerRotation(float newXRot, float newYRot) {
         this.xRotO = this.getXRot();
         this.yRotO = this.getYRot();
-        System.out.println("new: " + newXRot + "; " + newYRot);
+        //System.out.println("new: " + newXRot + "; " + newYRot);
         this.setXRot(newXRot);
         this.setYRot(newYRot);
-        System.out.println("Server rotation changed to: " + getXRot() + "; " + getYRot());
+       // System.out.println("Server rotation changed to: " + getXRot() + "; " + getYRot());
     }
     protected abstract float getRollStep();
     protected abstract float getMaxRoll();
@@ -159,10 +262,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     @Override
     public void tick() {
         if (level().isClientSide()) {
-            lerpXOld = getX();
-            lerpYOld = getY();
-            lerpZOld = getZ();
-            lerpYawOld = getYRot();
             lerpPitchOld = getXRot();
             lerpRollOld = this.roll;
         }
@@ -173,25 +272,75 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         if (!level().isClientSide()) {
             checkOBBCollisions();
             checkGroundCollision();
-            System.err.println("=================Server side===============");
+            /*System.err.println("=================Server side===============");
             System.err.println("x: " + this.getX() + " y: " + this.getY() + " z: " + this.getZ());
             System.err.println("xRot: " + this.getXRot() + " yRot: " + this.getYRot());
-            System.err.println("xRotW:" + this.pitchWanted + " yRotW:" + this.yawWanted);
+            System.err.println("xRotW:" + this.pitchWanted + " yRotW:" + this.yawWanted);*/
         } else {
-            applyWantedRotation();
+            //applyWantedRotation();
             lerpX = getX();
             lerpY = getY();
             lerpZ = getZ();
             lerpYaw = getYRot();
             lerpPitch = getXRot();
             lerpRoll = this.roll;
-            System.err.println("=================Client side===============");
+            /*System.err.println("=================Client side===============");
             System.err.println("x: " + this.getX() + " y: " + this.getY() + " z: " + this.getZ());
             System.err.println("xRot: " + this.getXRot() + " yRot: " + this.getYRot());
             System.err.println("xRotW:" + this.pitchWanted + " yRotW:" + this.yawWanted);
             System.err.println("PCS xRotW:" + ClientDroneManager.PilotingClientState.xW + " yRotW:" + ClientDroneManager.PilotingClientState.yW);
-
+            */handlePatrolClick();
         }
+    }
+    private boolean wasAttackDown = false;
+    private void handlePatrolClick() {
+        boolean attackDown =
+                Minecraft.getInstance().options.keyAttack.isDown();
+
+        if (attackDown && !wasAttackDown) {
+            net.minecraft.world.phys.HitResult hit = raycastFromCamera(1000.0);
+
+            if (hit instanceof EntityHitResult entityHit) {
+                patrolEntity = entityHit.getEntity();
+                patrolCenter = null;
+
+            } else if (hit instanceof BlockHitResult blockHit) {
+                patrolCenter = blockHit.getBlockPos();
+                patrolEntity = null;
+            }
+        }
+
+        wasAttackDown = attackDown;
+    }
+    private BlockHitResult raycastFromCamera(double distance) {
+        Minecraft mc = Minecraft.getInstance();
+
+        Camera camera = mc.gameRenderer.getMainCamera();
+
+        Vec3 start = camera.position();
+        Vector3fc tmp =
+                camera.forwardVector();
+        Vec3 direction = new Vec3(tmp.x(), tmp.y(), tmp.z());
+
+        Vec3 end = start.add(direction.scale(distance));
+
+        assert mc.level != null;
+        return mc.level.clip(
+                new ClipContext(
+                        start,
+                        end,
+                        ClipContext.Block.OUTLINE,
+                        ClipContext.Fluid.NONE,
+                        this
+                )
+        );
+    }
+    private BlockPos getPatrolCenter() {
+        if (patrolCenter == null) {
+            if (patrolEntity == null) return null;
+            return patrolEntity.blockPosition();
+        }
+        return patrolCenter;
     }
 
     private void setOldPos(Vec3 pos) {
@@ -245,8 +394,8 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     public Vec3 camPosFrom(Vector3f offset, float partialTick) {
         Vec3 center = getRenderPosition(partialTick);
 
-        float yawRad = ClientDroneManager.PilotingClientState.yW * Mth.DEG_TO_RAD;
-        float pitchRad = ClientDroneManager.PilotingClientState.xW * Mth.DEG_TO_RAD;
+        float yawRad = ClientDroneManager.PilotingClientState.camerYaw * Mth.DEG_TO_RAD;
+        float pitchRad = ClientDroneManager.PilotingClientState.cameraPitch * Mth.DEG_TO_RAD;
 
         double x = -Mth.sin(yawRad) * Mth.cos(pitchRad);
         double y = -Mth.sin(pitchRad);

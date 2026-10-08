@@ -12,9 +12,11 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -56,6 +58,11 @@ public class DroneHudRegistration {
             // Nose-direction marker: where the UAV's BODY is actually pointing, independent of
             // where the camera (mouse look) is currently aimed. Reuses the exact partialTick
             // this whole HUD layer already has -- no separate event/API needed for it.
+            graphics.drawString(
+                    Minecraft.getInstance().font,
+                    "Mode:  " +  ClientDroneManager.PilotingClientState.mode.name(),
+                    width - 50, height - 20, Colors.GREEN
+            );
             renderCenterSquare(graphics, centerX, centerY);
             renderBoresight(graphics, uav, partialTick, width, height);
             return;
@@ -219,5 +226,71 @@ public class DroneHudRegistration {
                 centerY + size,
                 Colors.GREEN
         );
+    }
+    private static int[] worldToScreen(Camera camera, Vec3 worldPos, int screenW, int screenH, float fovDeg) {
+        Vector3f camPos = new Vector3f(camera.position().toVector3f());
+        Vector3f target = new Vector3f((float) worldPos.x, (float) worldPos.y, (float) worldPos.z);
+        Vector3f relative = new Vector3f(target).sub(camPos);
+
+        Vector3f look = new Vector3f(camera.forwardVector());
+        Vector3f up = new Vector3f(camera.upVector());
+        Vector3f right = new Vector3f(camera.leftVector()).negate();
+
+        float forwardComp = relative.dot(look);
+        if (forwardComp <= 0.01f) return null; // behind the camera
+
+        float rightComp = relative.dot(right);
+        float upComp = relative.dot(up);
+
+        float fovRad = fovDeg * Mth.DEG_TO_RAD;
+        float aspect = (float) screenW / screenH;
+        float tanHalfFovY = (float) Math.tan(fovRad / 2f);
+        float tanHalfFovX = tanHalfFovY * aspect;
+
+        float ndcX = (rightComp / forwardComp) / tanHalfFovX;
+        float ndcY = (upComp / forwardComp) / tanHalfFovY;
+
+        if (Math.abs(ndcX) > 1f || Math.abs(ndcY) > 1f) return null; // off-screen
+
+        int px = Math.round((ndcX * 0.5f + 0.5f) * screenW);
+        int py = Math.round((0.5f - ndcY * 0.5f) * screenH);
+        return new int[]{px, py};
+    }
+    private static void renderBlockMarker(GuiGraphics graphics, BlockPos pos, int screenW, int screenH, int color) {
+        Minecraft mc = Minecraft.getInstance();
+        Camera camera = mc.gameRenderer.getMainCamera();
+        Vec3 worldCenter = Vec3.atCenterOf(pos);
+        float fovDeg = mc.options.fov().get();
+
+        int[] screen = worldToScreen(camera, worldCenter, screenW, screenH, fovDeg);
+        if (screen == null) return;
+
+        double distance = camera.position().distanceTo(worldCenter);
+        int radius = Mth.clamp((int) (200 / Math.max(distance, 1.0)), 2, 20); // tune the 200 and clamp range to taste
+
+        renderCircleOutline(graphics, screen[0], screen[1], radius, 1, color);
+        // or, for a square instead:
+        // graphics.fill(screen[0] - radius, screen[1] - radius, screen[0] + radius, screen[1] + radius, color);
+    }
+    private static void renderCircleOutline(GuiGraphics graphics, int cx, int cy, int radius, int thickness, int color) {
+        int segments = Math.max(16, radius * 2);
+        for (int i = 0; i < segments; i++) {
+            double angle = (2 * Math.PI * i) / segments;
+            int px = cx + (int) Math.round(radius * Math.cos(angle));
+            int py = cy + (int) Math.round(radius * Math.sin(angle));
+            graphics.fill(px, py, px + thickness, py + thickness, color);
+        }
+    }
+
+    /**
+     * Filled disc, via horizontal-span scanline fill: for each row, compute the half-width
+     * from the circle equation and fill one rectangle across it. O(radius) fill() calls,
+     * not O(radius^2) -- cheap even for a largeish HUD element.
+     */
+    private static void renderFilledCircle(GuiGraphics graphics, int cx, int cy, int radius, int color) {
+        for (int dy = -radius; dy <= radius; dy++) {
+            int dx = (int) Math.round(Math.sqrt((double) radius * radius - (double) dy * dy));
+            graphics.fill(cx - dx, cy + dy, cx + dx, cy + dy + 1, color);
+        }
     }
 }

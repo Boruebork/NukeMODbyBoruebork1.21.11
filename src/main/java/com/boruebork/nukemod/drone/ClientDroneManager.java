@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -60,7 +61,7 @@ public class ClientDroneManager {
 
         ));
         }else if (PilotingClientState.drone instanceof AbstractUAV uav) {
-            System.out.println("PCS xRot: " + PilotingClientState.xRot + " yRot: " + PilotingClientState.yRot);
+           // System.out.println("PCS xRot: " + PilotingClientState.xRot + " yRot: " + PilotingClientState.yRot);
             ClientPacketDistributor.sendToServer(new FixedWingInputPayload(
                     uav.getId(),
                     PilotingClientState.x,
@@ -99,6 +100,16 @@ public class ClientDroneManager {
         public static float rollW;
         public static float yW;
         public static float xW;
+        public static float camerYaw;
+        public static float cameraPitch;
+        public static float cameraYawO;
+        public static float cameraPitchO;
+        public static PilotingMode mode = PilotingMode.FIXED;
+        public static enum PilotingMode {
+            FIXED,
+            FREE,
+            PATROL
+        }
 
         public static void turn(double dyR, double dxR) {
             if (drone == null) return;
@@ -112,21 +123,30 @@ public class ClientDroneManager {
                 yRotO += f1;
                 xRotO = Mth.clamp(xRotO, -90.0F, 90.0F);
             }else if (drone instanceof AbstractUAV uav) {
+                cameraYawO = camerYaw;
+                cameraPitchO = cameraPitch;
                 float f = (float)dxR * 0.15F;
                 float f1 = (float)dyR * 0.15F;
-                xW = xW + f;
-                yW = yW + f1;
-                xW = Mth.clamp(xW, -90.0F, 90.0F);
-                uav.setYawWanted(yW);
-                uav.setPitchWanted(xW);
+                if (mode != PilotingMode.FIXED) {
+                    cameraPitch += f;
+                    camerYaw += f1;
+                    cameraPitch = Mth.clamp(cameraPitch, -90.0F, 90.0F);
+                } else{
+                    xW = xW + f;
+                    yW = yW + f1;
+                    xW = Mth.clamp(xW, -90.0F, 90.0F);
+                    cameraPitch = xW;
+                    camerYaw = yW;
+                    uav.setYawWanted(yW);
+                    uav.setPitchWanted(xW);
 
+                }
             }
         }
         public static boolean isPiloting() {
             return drone != null;
         }
     }
-
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         if (Minecraft.getInstance().isPaused()) return;
@@ -134,13 +154,9 @@ public class ClientDroneManager {
             return;
         if (PilotingClientState.drone instanceof AbstractUAV uav) {
             float partialTick = (float) event.getPartialTick();
-            event.setYaw(PilotingClientState.yW);
-            event.setPitch(PilotingClientState.xW);
+            event.setYaw(PilotingClientState.camerYaw);
+            event.setPitch(PilotingClientState.cameraPitch);
             //event.setRoll(uav.getRenderRoll(partialTick));
-            /*uav.updateLookClientSide(
-                    PilotingClientState.xRot,
-                    PilotingClientState.yRot
-            );*/
         } else {
             event.setYaw(PilotingClientState.yRot);
             event.setPitch(PilotingClientState.xRot);
@@ -158,7 +174,15 @@ public class ClientDroneManager {
             );
         }
     }
-
+    public static PilotingClientState.PilotingMode next(PilotingClientState.PilotingMode mode) {
+        if (mode == PilotingClientState.PilotingMode.FIXED) {
+            return PilotingClientState.PilotingMode.FREE;
+        } else if (mode == PilotingClientState.PilotingMode.FREE) {
+            return PilotingClientState.PilotingMode.PATROL;
+        } else {
+            return PilotingClientState.PilotingMode.FIXED;
+        }
+    }
     @SubscribeEvent
     public static void onClientTickPre(ClientTickEvent.Pre event) {
 
@@ -171,6 +195,9 @@ public class ClientDroneManager {
             PilotingClientState.drone = null;
             Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
         }
+        if (Minecraft.getInstance().options.keyShift.isDown()) {
+            PilotingClientState.mode = next(PilotingClientState.mode);
+        };
         PilotingClientState.movementYRot = PilotingClientState.yRot;
     }
 
