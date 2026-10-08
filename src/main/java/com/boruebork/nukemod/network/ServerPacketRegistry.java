@@ -64,5 +64,10 @@ public class ServerPacketRegistry {
                 DroneLaucnhProjectilePayload.STREAM_CODEC,
                 DroneManager::launchDroneProjectile
         );
+        registrar.playToServer(
+                FixedWingInputPayload.TYPE,
+                FixedWingInputPayload.STREAM_CODEC,
+                DroneManager::onFixedWingInputUpdate
+        );
     }
 }

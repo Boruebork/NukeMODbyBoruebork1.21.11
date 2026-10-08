@@ -1,13 +1,9 @@
 package com.boruebork.nukemod.ooblib;
 
 import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.mixin.*;
-
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
-import com.boruebork.nukemod.entity.custom.uav.RQ4;
+import com.boruebork.nukemod.network.packet.FixedWingInputPayload;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
@@ -16,8 +12,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -26,80 +20,122 @@ import org.joml.Vector3f;
 
 import java.util.List;
 
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-
 public abstract class AbstractUAV extends AbstractDrone implements HasHitboxParts {
 
-    // --- throttle / speed ---
-    // Persistent, not instant: W/S nudge this toward getMaxSpeed()/getMinSpeed() each tick,
-    // rather than the FPV model's direct "input * speedModifier = velocity this instant".
+    private static final double COLLISION_SKIN = 1.0E-3;
+
     private float speed = 0f;
-    private static final double COLLISION_SKIN = 1.0E-3;      // back off a tiny bit from impact
-    private static final double MIN_MOVE_SQR = 1.0E-10;       // dead-zone to suppress tiny jitter
 
-    protected abstract float getMinSpeed();        // e.g. 0f, or a stall speed if you want "too slow = falls"
-    protected abstract float getMaxSpeed();
-    protected abstract float getAcceleration();     // speed change per tick at full throttle input
+    private float yawWanted;
+    private float yawWantedO;
+    private float pitchWanted;
+    private float pitchWantedO;
+    private float rollWanted;
+    private float rollWantedO;
 
-    // --- bank-derived (coordinated) turning ---
-    // No direct yaw target from the pilot at all -- yaw only changes as a side effect of
-    // however much the aircraft is currently banked, same as a real fixed-wing turn.
-    protected abstract float getYawPerRollDegreePerTick(); // e.g. 0.05f: small, since it compounds every tick while banked
-    protected abstract float getMaxPitchRatePerTick();     // still rate-limited; see note below on where targetPitch comes from
-
-    // ============================================================
-    // Client-side render interpolation.
-    // ============================================================
     private double lerpXOld, lerpYOld, lerpZOld;
     private double lerpX, lerpY, lerpZ;
     private float lerpYawOld, lerpYaw;
+    private float lerpPitchOld, lerpPitch;
+    private float lerpRollOld, lerpRoll;
+
+    protected abstract float getMinSpeed();
+    protected abstract float getMaxSpeed();
+    protected abstract float getAcceleration();
+    protected abstract float getMaxPitchRatePerTick();
 
     public AbstractUAV(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
 
     @Override
-    protected void applyMovement(float forward, float strafe, boolean up, boolean down, float targetYaw, float targetPitch) {
-        // Runs on BOTH sides unconditionally (unlike AbstractFPVDrone, which only sets
-        // rotation server-side because the client already got instant camera-coupled look
-        // via updateLookClientSide). Here the client needs to run the same throttle/roll/yaw
-        // physics locally too, or its own predicted flight won't match what the server
-        // eventually confirms -- there's no shortcut via "the client already set it directly".
+    protected void applyMovement(
+            float forward,
+            float strafe,
+            boolean up,
+            boolean down,
+            float targetYaw,
+            float targetPitch
+    ) {
+        this.speed = Mth.clamp(
+                this.speed + forward * getAcceleration(),
+                getMinSpeed(),
+                getMaxSpeed()
+        );
+        //float yawErr = Mth.wrapDegrees(this.yawWanted - this.getYRot());
+        //float autoBank = Mth.clamp(-yawErr * 2.0f, -MAX_ROLL_DEGREES, MAX_ROLL_DEGREES);
+        /*this.rollWanted = Mth.clamp(
+                autoBank + strafe * MAX_ROLL_DEGREES,
+                -MAX_ROLL_DEGREES,
+                MAX_ROLL_DEGREES
+        );*/
+        if (level().isClientSide()) {
+            applyWantedRotation();
 
-        // 1) throttle: W/S (forward) nudges persistent speed, doesn't set it directly
-        this.speed = Mth.clamp(this.speed + forward * getAcceleration(), getMinSpeed(), getMaxSpeed());
+        } else {
+            applyServerRotation(targetPitch, targetYaw);
+        }
 
-        // 2) roll: A/D (strafe) is the bank target, eased by the inherited roll state machine
-        float targetRoll = strafe * MAX_ROLL_DEGREES;
-        updateRollTowards(targetRoll);
-
-        // 3) yaw: derived from CURRENT roll (post-easing), not from any pilot-supplied target.
-        float yawDeltaThisTick = -this.roll * getYawPerRollDegreePerTick();
-        this.yRotO = this.getYRot();
-        this.setYRot(this.getYRot() + yawDeltaThisTick);
-
-        // 4) pitch: still rate-limited via the target passed in, independent of the yaw logic.
-        // NOTE: this only actually does something useful once AbstractDrone.tick()'s client
-        // branch passes the real mouse-desired pitch (PilotingClientState.xRot) here instead
-        // of this.getXRot() -- see the AbstractDrone patch.
-        this.xRotO = this.getXRot();
-        float pitchDelta = Mth.clamp(targetPitch - this.getXRot(), -getMaxPitchRatePerTick(), getMaxPitchRatePerTick());
-        this.setXRot(this.getXRot() + pitchDelta);
-
-        // 5) move forward along the body's ACTUAL (lagging) orientation
         float yawRad = this.getYRot() * Mth.DEG_TO_RAD;
         float pitchRad = this.getXRot() * Mth.DEG_TO_RAD;
-        float sinYaw = Mth.sin(-yawRad);
-        float cosYaw = Mth.cos(-yawRad);
-        float sinPitch = Mth.sin(-pitchRad);
-        float cosPitch = Mth.cos(pitchRad);
-        Vec3 forwardVec = new Vec3(sinYaw * cosPitch, sinPitch, cosYaw * cosPitch);
+        Vec3 forwardVec = new Vec3(
+                Mth.sin(-yawRad) * Mth.cos(pitchRad),
+                Mth.sin(-pitchRad),
+                Mth.cos(-yawRad) * Mth.cos(pitchRad)
+        );
 
-        Vec3 desiredMovement = forwardVec.scale(this.speed);
-
-        Vec3 actualMovement = moveWithOBBTerrainCollision(desiredMovement);
+        Vec3 actualMovement = moveWithOBBTerrainCollision(forwardVec.scale(this.speed));
         this.setDeltaMovement(actualMovement);
+    }
+    protected void applyServerRotation(float newXRot, float newYRot) {
+        this.xRotO = this.getXRot();
+        this.yRotO = this.getYRot();
+        System.out.println("new: " + newXRot + "; " + newYRot);
+        this.setXRot(newXRot);
+        this.setYRot(newYRot);
+        System.out.println("Server rotation changed to: " + getXRot() + "; " + getYRot());
+    }
+    protected abstract float getRollStep();
+    protected abstract float getMaxRoll();
+    protected abstract float getRollFactor();
+    /** Only place UAV body rotation should change. Once per tick, from applyMovement. */
+    protected void applyWantedRotation() {
+        float yawStep = Mth.clamp(
+                Mth.wrapDegrees(this.yawWanted - this.getYRot()),
+                -getYawRatePerTick(),
+                getYawRatePerTick()
+        );
+        this.yRotO = this.getYRot();
+        this.setYRot(this.getYRot() + yawStep);
+
+        float pitchStep = Mth.clamp(
+                Mth.wrapDegrees(this.pitchWanted - this.getXRot()),
+                -getPitchRatePerTick(),
+                getPitchRatePerTick()
+        );
+        this.xRotO = this.getXRot();
+        this.setXRot(Mth.clamp(this.getXRot() + pitchStep, -90f, 90f));
+
+        float rollStep = Mth.clamp(
+                Mth.wrapDegrees(this.rollWanted - this.roll),
+                -getRollStep(),
+                getRollStep()
+        );
+
+        this.rollO = this.roll;
+        this.roll += rollStep;
+    }
+
+    protected float getYawRatePerTick() {
+        return 1.5f;
+    }
+
+    protected float getPitchRatePerTick() {
+        return getMaxPitchRatePerTick();
+    }
+
+    public float getRollWanted() {
+        return rollWanted;
     }
 
     @Override
@@ -111,23 +147,15 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     public Quaternionf getEntityRotation() {
         return new Quaternionf()
                 .rotateY((float) Math.toRadians(-this.getYRot()))
-                .rotateX((float) Math.toRadians(this.getXRot()));
+                .rotateX((float) Math.toRadians(this.getXRot()))
+                .rotateZ((float) Math.toRadians(this.roll));
     }
-
-    /**
-     * Overridden to a no-op. AbstractDrone's version directly snaps xRot/yRot from the
-     * mouse every rendered FRAME -- correct for FPV's instant camera-body coupling, but
-     * for a UAV it was silently overwriting the once-per-TICK rate-limited turning from
-     * applyMovement()/turnTowards() on every single frame between ticks, which is why
-     * rotation was fighting itself. UAV's rotation should change ONLY via applyMovement's
-     * turnTowards() call, driven by the target passed in from AbstractDrone.tick() --
-     * nothing here needs to touch the entity's rotation directly at all.
-     */
-    @Override
-    public void updateLookClientSide(double mouseYaw, double mousePitch) {
-        // intentionally empty
+    public Quaternionf getClientEntityRotation(float partialTick) {
+        return new Quaternionf()
+                .rotateY((float) Math.toRadians(-this.getYRot(partialTick)))
+                .rotateX((float) Math.toRadians(this.getXRot(partialTick)))
+                .rotateZ((float) Math.toRadians(this.getRenderRoll(partialTick)));
     }
-
     @Override
     public void tick() {
         if (level().isClientSide()) {
@@ -136,20 +164,33 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
             lerpZOld = getZ();
             lerpYawOld = getYRot();
             lerpPitchOld = getXRot();
+            lerpRollOld = this.roll;
         }
+
         setOldPos(position());
         super.tick();
+
         if (!level().isClientSide()) {
             checkOBBCollisions();
             checkGroundCollision();
+            System.err.println("=================Server side===============");
+            System.err.println("x: " + this.getX() + " y: " + this.getY() + " z: " + this.getZ());
+            System.err.println("xRot: " + this.getXRot() + " yRot: " + this.getYRot());
+            System.err.println("xRotW:" + this.pitchWanted + " yRotW:" + this.yawWanted);
         } else {
-            // snapshot AFTER this tick's update -- the "new" end of the lerp
+            applyWantedRotation();
             lerpX = getX();
             lerpY = getY();
             lerpZ = getZ();
-
             lerpYaw = getYRot();
             lerpPitch = getXRot();
+            lerpRoll = this.roll;
+            System.err.println("=================Client side===============");
+            System.err.println("x: " + this.getX() + " y: " + this.getY() + " z: " + this.getZ());
+            System.err.println("xRot: " + this.getXRot() + " yRot: " + this.getYRot());
+            System.err.println("xRotW:" + this.pitchWanted + " yRotW:" + this.yawWanted);
+            System.err.println("PCS xRotW:" + ClientDroneManager.PilotingClientState.xW + " yRotW:" + ClientDroneManager.PilotingClientState.yW);
+
         }
     }
 
@@ -159,7 +200,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         this.zo = this.zOld = pos.z;
     }
 
-    /** Smoothed world position for rendering -- use instead of raw getX()/Y()/Z(). */
     public Vec3 getRenderPosition(float partialTick) {
         return new Vec3(
                 Mth.lerp(partialTick, this.xo, this.getX()),
@@ -168,40 +208,57 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         );
     }
 
-    /** Smoothed yaw for rendering -- wraps correctly across the +/-180 boundary. */
     public float getRenderYaw(float partialTick) {
         return Mth.rotLerp(partialTick, lerpYawOld, lerpYaw);
     }
-    private float lerpPitchOld, lerpPitch;
-    /** Smoothed pitch for rendering -- use instead of raw getXRot(). */
+
     public float getRenderPitch(float partialTick) {
         return Mth.lerp(partialTick, lerpPitchOld, lerpPitch);
     }
 
-    /** Smoothed roll for rendering -- use instead of raw this.roll. */
     public float getRenderRoll(float partialTick) {
-        return ClientDroneManager.PilotingClientState.drone.getRoll();
+        return Mth.lerp(partialTick, rollO, roll);
     }
 
-    /** Nose-camera offset in the drone's own local space. Tune to your model. */
     public Vector3f getCameraLocalOffset() {
         return getHitboxParts().getFirst().localOffset();
     }
 
-    /** Full camera orientation (yaw+pitch+roll), smoothed for rendering. */
     public Quaternionf getCameraRotation(float partialTick) {
-        float yaw = getRenderYaw(partialTick);
-        float pitch = getRenderPitch(partialTick);
-        float roll = getRenderRoll(partialTick);
-        return new Quaternionf()
-                .rotateY((float) Math.toRadians(-yaw))
-                .rotateX((float) Math.toRadians(pitch))
-                .rotateZ((float) Math.toRadians(roll));
+        if (level().isClientSide()) {
+            return new Quaternionf()
+                    .rotateY((float) ClientDroneManager.PilotingClientState.yW)
+                    .rotateX((float) ClientDroneManager.PilotingClientState.xW)
+                    .rotateZ((float) Math.toRadians(getRenderRoll(partialTick)));
+        }else {
+            return new Quaternionf()
+                    .rotateY((float) Math.toRadians(-getRenderYaw(partialTick)))
+                    .rotateX((float) Math.toRadians(getRenderPitch(partialTick)))
+                    .rotateZ((float) Math.toRadians(getRenderRoll(partialTick)));
+        }
     }
 
-    /** World-space camera position for this tick/frame -- offset rotated by current orientation. */
     public Vec3 getCameraPosition(float partialTick) {
         return getRenderPosition(partialTick);
+    }
+    //client
+    public Vec3 camPosFrom(Vector3f offset, float partialTick) {
+        Vec3 center = getRenderPosition(partialTick);
+
+        float yawRad = ClientDroneManager.PilotingClientState.yW * Mth.DEG_TO_RAD;
+        float pitchRad = ClientDroneManager.PilotingClientState.xW * Mth.DEG_TO_RAD;
+
+        double x = -Mth.sin(yawRad) * Mth.cos(pitchRad);
+        double y = -Mth.sin(pitchRad);
+        double z = Mth.cos(yawRad) * Mth.cos(pitchRad);
+
+        double radius = offset.length();
+
+        return center.add(
+                -x * radius,
+                -y * radius,
+                -z * radius
+        );
     }
 
     protected Vec3 moveWithOBBTerrainCollision(Vec3 desired) {
@@ -219,7 +276,8 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         z += dz;
 
         boolean hitVertical = Math.abs(dy - desired.y) > 1.0E-7;
-        boolean hitHorizontal = Math.abs(dx - desired.x) > 1.0E-7 || Math.abs(dz - desired.z) > 1.0E-7;
+        boolean hitHorizontal = Math.abs(dx - desired.x) > 1.0E-7
+                || Math.abs(dz - desired.z) > 1.0E-7;
 
         this.verticalCollision = hitVertical;
         this.horizontalCollision = hitHorizontal;
@@ -236,12 +294,15 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
 
     protected boolean hasTerrainCollisionAt(double ex, double ey, double ez) {
         List<HitboxPart> parts = getHitboxParts();
-        if (parts.isEmpty()) return false;
+        if (parts.isEmpty()) {
+            return false;
+        }
 
         Quaternionf rot = getEntityRotation();
         OBB[] obbs = new OBB[parts.size()];
         AABB[] boxes = new AABB[parts.size()];
         AABB broad = null;
+
         for (int i = 0; i < parts.size(); i++) {
             obbs[i] = getWorldOBBAt(parts.get(i), rot, ex, ey, ez);
             boxes[i] = obbs[i].toAABB();
@@ -262,16 +323,24 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
                 for (int y = minY; y <= maxY; y++) {
                     pos.set(x, y, z);
                     BlockState state = level().getBlockState(pos);
-                    if (state.isAir()) continue;
+                    if (state.isAir()) {
+                        continue;
+                    }
 
                     VoxelShape shape = state.getCollisionShape(level(), pos);
-                    if (shape.isEmpty()) continue;
+                    if (shape.isEmpty()) {
+                        continue;
+                    }
 
                     for (AABB local : shape.toAabbs()) {
                         AABB world = local.move(pos);
                         for (int i = 0; i < obbs.length; i++) {
-                            if (!boxes[i].intersects(world)) continue;
-                            if (obbs[i].intersects(OBB.fromAABB(world))) return true;
+                            if (!boxes[i].intersects(world)) {
+                                continue;
+                            }
+                            if (obbs[i].intersects(OBB.fromAABB(world))) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -290,51 +359,41 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         return new OBB(center, new Vector3f(part.localHalfExtents()), worldRot);
     }
 
+    protected OBB getWorldOBBAt(HitboxPart part, double entityX, double entityY, double entityZ) {
+        return getWorldOBBAt(part, getEntityRotation(), entityX, entityY, entityZ);
+    }
+
     private double clipAxis(double x, double y, double z, double dx, double dy, double dz) {
         double full = dx + dy + dz;
-        if (Math.abs(full) < 1.0E-9) return 0;
-
-        if (!hasTerrainCollisionAt(x + dx, y + dy, z + dz)) return full;
+        if (Math.abs(full) < 1.0E-9) {
+            return 0;
+        }
+        if (!hasTerrainCollisionAt(x + dx, y + dy, z + dz)) {
+            return full;
+        }
 
         double low = 0, high = 1;
         for (int i = 0; i < 10; i++) {
             double mid = (low + high) * 0.5;
-            if (hasTerrainCollisionAt(x + dx * mid, y + dy * mid, z + dz * mid)) high = mid;
-            else low = mid;
+            if (hasTerrainCollisionAt(x + dx * mid, y + dy * mid, z + dz * mid)) {
+                high = mid;
+            } else {
+                low = mid;
+            }
         }
+
         double safe = full * low;
         return Math.abs(safe) <= COLLISION_SKIN ? 0 : safe - Math.signum(safe) * COLLISION_SKIN;
     }
 
-    protected OBB getWorldOBBAt(HitboxPart part, double entityX, double entityY, double entityZ) {
-        Vector3f localCenter = part.localOffset();
-        Vector3f worldCenter = new Vector3f(localCenter).add(part.localPivot());
-
-        getEntityRotation().transform(worldCenter);
-
-        worldCenter.add(
-                (float) entityX,
-                (float) entityY,
-                (float) entityZ
-        );
-
-        return new OBB(
-                worldCenter,
-                new Vector3f(part.localHalfExtents()),
-                getEntityRotation()
-        );
-    }
-
     protected boolean checkGroundCollision() {
-        AABB broadphase = getBroadphaseAABB();
         List<HitboxPart> parts = getHitboxParts();
         if (parts.isEmpty()) {
             return false;
         }
 
-        List<OBB> partOBBs = parts.stream()
-                .map(this::getWorldOBB)
-                .toList();
+        AABB broadphase = getBroadphaseAABB();
+        List<OBB> partOBBs = parts.stream().map(this::getWorldOBB).toList();
 
         int minX = Mth.floor(broadphase.minX);
         int maxX = Mth.floor(broadphase.maxX);
@@ -350,20 +409,20 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
                 if (!level().hasChunkAt(pos)) {
                     continue;
                 }
-
                 for (int y = minY; y <= maxY; y++) {
                     pos.set(x, y, z);
-
                     BlockState state = level().getBlockState(pos);
-                    if (state.isAir()) continue;
+                    if (state.isAir()) {
+                        continue;
+                    }
 
                     VoxelShape shape = state.getCollisionShape(level(), pos);
-                    if (shape.isEmpty()) continue;
+                    if (shape.isEmpty()) {
+                        continue;
+                    }
 
                     for (AABB localBox : shape.toAabbs()) {
-                        AABB worldBox = localBox.move(pos);
-                        OBB blockOBB = OBB.fromAABB(worldBox);
-
+                        OBB blockOBB = OBB.fromAABB(localBox.move(pos));
                         for (int i = 0; i < partOBBs.size(); i++) {
                             if (partOBBs.get(i).intersects(blockOBB)) {
                                 onGroundCollision(parts.get(i), pos.immutable(), state);
@@ -374,24 +433,19 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
                 }
             }
         }
-
         return false;
     }
 
     protected void onGroundCollision(HitboxPart part, BlockPos pos, BlockState state) {
-        // this.setDeltaMovement(Vec3.ZERO);
-        // this.speed = 0f;
     }
 
     protected void checkOBBCollisions() {
         AABB broadphase = getBroadphaseAABB();
-
         List<Entity> entities = level().getEntitiesOfClass(
                 Entity.class,
                 broadphase,
                 entity -> entity != this && entity.isPickable()
         );
-
         for (Entity entity : entities) {
             checkOBBCollision(entity);
         }
@@ -399,26 +453,24 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
 
     @Override
     public void move(MoverType type, Vec3 movement) {
-        Vec3 forwardVec = new Vec3(sin(this.getYRot()) * cos(this.getXRot()), sin(getXRot()), cos(getYRot()) * cos(getXRot()));
-
-        Vec3 desiredMovement = forwardVec.scale(this.speed);
-        Vec3 actualMovement = moveWithOBBTerrainCollision(desiredMovement);
-
-        this.setDeltaMovement(actualMovement);
+        float yawRad = this.getYRot() * Mth.DEG_TO_RAD;
+        float pitchRad = this.getXRot() * Mth.DEG_TO_RAD;
+        Vec3 forwardVec = new Vec3(
+                Mth.sin(-yawRad) * Mth.cos(pitchRad),
+                Mth.sin(-pitchRad),
+                Mth.cos(-yawRad) * Mth.cos(pitchRad)
+        );
+        this.setDeltaMovement(moveWithOBBTerrainCollision(forwardVec.scale(this.speed)));
     }
 
     protected void checkOBBCollision(Entity other) {
-        if (!(other instanceof AbstractUAV otherOBBEntity)) {
+        if (!(other instanceof AbstractUAV otherUav)) {
             return;
         }
-
         for (HitboxPart thisPart : getHitboxParts()) {
-            for (HitboxPart otherPart : otherOBBEntity.getHitboxParts()) {
-                OBB thisOBB = getWorldOBB(thisPart);
-                OBB otherOBB = otherOBBEntity.getWorldOBB(otherPart);
-
-                if (thisOBBsIntersect(thisOBB, otherOBB)) {
-                    onOBBCollision(thisPart, otherOBBEntity, otherPart);
+            for (HitboxPart otherPart : otherUav.getHitboxParts()) {
+                if (thisOBBsIntersect(getWorldOBB(thisPart), otherUav.getWorldOBB(otherPart))) {
+                    onOBBCollision(thisPart, otherUav, otherPart);
                 }
             }
         }
@@ -426,23 +478,11 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
 
     protected AABB getBroadphaseAABB() {
         AABB result = null;
-
         for (HitboxPart part : getHitboxParts()) {
-            OBB obb = getWorldOBB(part);
-            AABB aabb = getOBBAABB(obb);
-
-            if (result == null) {
-                result = aabb;
-            } else {
-                result = result.minmax(aabb);
-            }
+            AABB aabb = getOBBAABB(getWorldOBB(part));
+            result = result == null ? aabb : result.minmax(aabb);
         }
-
-        if (result == null) {
-            return getBoundingBox();
-        }
-
-        return result;
+        return result == null ? getBoundingBox() : result;
     }
 
     private List<HitboxPart> getHitboxParts() {
@@ -450,22 +490,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     }
 
     protected OBB getWorldOBB(HitboxPart part) {
-        Vector3f localCenter = part.localOffset();
-        Vector3f worldCenter = new Vector3f(localCenter).add(part.localPivot());
-
-        getEntityRotation().transform(worldCenter);
-
-        worldCenter.add(
-                (float) getX(),
-                (float) getY(),
-                (float) getZ()
-        );
-
-        return new OBB(
-                worldCenter,
-                new Vector3f(part.localHalfExtents()),
-                getEntityRotation()
-        );
+        return getWorldOBBAt(part, getEntityRotation(), getX(), getY(), getZ());
     }
 
     protected AABB getOBBAABB(OBB obb) {
@@ -477,14 +502,12 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     }
 
     protected void onOBBCollision(HitboxPart thisPart, AbstractUAV other, HitboxPart otherPart) {
-        // Override this in RQ4 / specific UAV types.
     }
 
     @Override
     public boolean hurtServer(ServerLevel serverLevel, DamageSource damageSource, float damage) {
         return false;
     }
-
     @Override
     public boolean isPickable() {
         return true;
@@ -494,29 +517,32 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     public boolean isPushable() {
         return super.isPushable();
     }
-
-    public Vec3 camPosFrom(AbstractUAV uav, Vector3f local, float partialTick) {
-        // 1) CG — vanilla entity interpolation (updated by setPos / packets)
-        Vec3 cg = new Vec3(
-                Mth.lerp(partialTick, uav.xo, uav.getX()),
-                Mth.lerp(partialTick, uav.yo, uav.getY()),
-                Mth.lerp(partialTick, uav.zo, uav.getZ())
+    /// server gets info about rotations from the client!
+    public void updateFixedWingRot(FixedWingInputPayload payload) {
+        this.yawWantedO = this.yawWanted;
+        this.yawWanted = payload.yRotW();
+        this.pitchWantedO = this.pitchWanted;
+        this.pitchWanted = payload.xRotW();
+        this.rollWantedO = this.rollWanted;
+        this.rollWanted = payload.rollW();
+        this.roll = payload.roll();
+        applyMovement(payload.dz(), payload.forward(), false, false, payload.yRot(), payload.xRot());
+    }
+    private void updateRollWanted() {
+        float yawDelta = Mth.wrapDegrees(yawWanted - yawWantedO);
+        rollWanted = Mth.clamp(
+                -yawDelta * getRollFactor(),
+                -getMaxRoll(),
+                getMaxRoll()
         );
-
-        // 2) Body attitude — same sources the renderer uses
-        float yaw   = ClientDroneManager.PilotingClientState.yRot;   // must be rotLerp internally
-        float pitch = ClientDroneManager.PilotingClientState.xRot;
-        float roll  = ClientDroneManager.PilotingClientState.roll;
-
-        Quaternionf body = new Quaternionf()
-                .rotateY((float) Math.toRadians(-yaw))
-                .rotateX((float) Math.toRadians(pitch))
-                .rotateZ((float) Math.toRadians(roll));
-
-        // 3) Rigid offset on the airframe
-        Vector3f off = new Vector3f(local);
-        body.transform(off);
-
-        return cg.add(off.x, off.y, off.z);
+    }
+    public void setYawWanted(float yW) {
+        this.yawWantedO = this.yawWanted;
+        this.yawWanted = yW;
+        updateRollWanted();
+    }
+    public void setPitchWanted(float xW) {
+        this.pitchWantedO = this.pitchWanted;
+        this.pitchWanted = xW;
     }
 }

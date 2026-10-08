@@ -78,14 +78,14 @@ public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
         super.extractRenderState(entity, reusedState, partialTick);
         // Same orientation as OBBs / camera. PilotingClientState will desync the mesh.
         if (ClientDroneManager.PilotingClientState.drone == entity){
-            reusedState.xRot = ClientDroneManager.PilotingClientState.xRot;
-            reusedState.yRot = ClientDroneManager.PilotingClientState.yRot;
-            reusedState.zRot =  Mth.lerp(partialTick, ClientDroneManager.PilotingClientState.rollO, ClientDroneManager.PilotingClientState.roll);
+            reusedState.xRot = entity.getXRot(partialTick);
+            reusedState.yRot = entity.getYRot(partialTick);
+            reusedState.zRot =  entity.getRenderRoll(partialTick);
             reusedState.cameraPos = entity.getCameraPosition(partialTick);
         }else{
             reusedState.xRot = entity.getXRot(partialTick);
             reusedState.yRot = entity.getYRot(partialTick);
-            reusedState.zRot = Mth.lerp(partialTick, entity.getRollO(), entity.getRoll());
+            reusedState.zRot =  entity.getRenderRoll(partialTick);
         }
     }
 }

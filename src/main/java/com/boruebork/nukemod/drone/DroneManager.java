@@ -2,11 +2,10 @@ package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
-import com.boruebork.nukemod.network.packet.DroneInputPayload;
-import com.boruebork.nukemod.network.packet.DroneLaucnhProjectilePayload;
-import com.boruebork.nukemod.network.packet.ExitDronePacket;
-import com.boruebork.nukemod.network.packet.SetProjectileModePayload;
+import com.boruebork.nukemod.network.packet.*;
+import com.boruebork.nukemod.ooblib.AbstractUAV;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -53,7 +52,7 @@ public class DroneManager {
         Entity ent = NukeModbyBoruebork.server.getLevel(Level.OVERWORLD).getEntity(droneInputPayload.droneId());
         if (ent != null)
         {
-            if (ent instanceof AbstractDrone drone){
+            if (ent instanceof AbstractFPVDrone drone){
                 drone.updatePosRot(droneInputPayload);
             }
         }
@@ -128,5 +127,13 @@ public class DroneManager {
 
     public AbstractDrone getPilotedDrone(ServerPlayer player) {
         return (AbstractDrone) player.level().getEntity(playerToDrone.get(player.getUUID()));
+    }
+
+    public static void onFixedWingInputUpdate(FixedWingInputPayload payload, IPayloadContext context) {
+        Entity ent = NukeModbyBoruebork.server.getLevel(Level.OVERWORLD).getEntity(payload.droneId());
+        if (ent == null) return;
+        if (ent instanceof AbstractUAV uav) {
+            uav.updateFixedWingRot(payload);
+        }
     }
 }

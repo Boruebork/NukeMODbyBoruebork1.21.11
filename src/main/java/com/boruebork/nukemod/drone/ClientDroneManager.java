@@ -1,7 +1,9 @@
 package com.boruebork.nukemod.drone;
 
+import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
+import com.boruebork.nukemod.network.packet.FixedWingInputPayload;
 import com.boruebork.nukemod.network.packet.NotifyClientDroneExit;
 import com.boruebork.nukemod.ooblib.AbstractUAV;
 import net.minecraft.client.Minecraft;
@@ -46,6 +48,7 @@ public class ClientDroneManager {
         if (Minecraft.getInstance().isPaused()) return;
         if (PilotingClientState.drone == null)  return;
         if (Minecraft.getInstance().player == null) return;
+        if (PilotingClientState.drone instanceof AbstractFPVDrone fpvDrone){
         ClientPacketDistributor.sendToServer(new DroneInputPayload(
                 PilotingClientState.drone.getId(),
                 PilotingClientState.x,
@@ -56,6 +59,22 @@ public class ClientDroneManager {
                 PilotingClientState.yRot
 
         ));
+        }else if (PilotingClientState.drone instanceof AbstractUAV uav) {
+            System.out.println("PCS xRot: " + PilotingClientState.xRot + " yRot: " + PilotingClientState.yRot);
+            ClientPacketDistributor.sendToServer(new FixedWingInputPayload(
+                    uav.getId(),
+                    PilotingClientState.x,
+                    PilotingClientState.z,
+                    PilotingClientState.up,
+                    PilotingClientState.down,
+                    PilotingClientState.xW,
+                    PilotingClientState.yW,
+                    uav.getXRot(),
+                    uav.getYRot(),
+                    uav.getRoll(),
+                    uav.getRollWanted()
+            ));
+        }
     }
 
     public static void exitDrone(NotifyClientDroneExit notifyClientDroneExit, IPayloadContext context) {
@@ -81,25 +100,30 @@ public class ClientDroneManager {
         public static float yW;
         public static float xW;
 
-        public static void turn(double yR, double xR) {
-            float f = (float)xR * 0.15F;
-            float f1 = (float)yR * 0.15F;
-            xRot =xRot + f;
-            yRot =yRot + f1;
-            xRot = Mth.clamp(xRot, -90.0F, 90.0F);
-            xRotO += f;
-            yRotO += f1;
-            xRotO = Mth.clamp(xRotO, -90.0F, 90.0F);
-            float targetRoll = Mth.clamp(-PilotingClientState.z * MAX_ROLL_DEGREES, -MAX_ROLL_DEGREES, MAX_ROLL_DEGREES);
+        public static void turn(double dyR, double dxR) {
+            if (drone == null) return;
+            if (drone instanceof AbstractFPVDrone) {
+                float f = (float)dxR * 0.15F;
+                float f1 = (float)dyR * 0.15F;
+                xRot =xRot + f;
+                yRot =yRot + f1;
+                xRot = Mth.clamp(xRot, -90.0F, 90.0F);
+                xRotO += f;
+                yRotO += f1;
+                xRotO = Mth.clamp(xRotO, -90.0F, 90.0F);
+            }else if (drone instanceof AbstractUAV uav) {
+                float f = (float)dxR * 0.15F;
+                float f1 = (float)dyR * 0.15F;
+                xW = xW + f;
+                yW = yW + f1;
+                xW = Mth.clamp(xW, -90.0F, 90.0F);
+                uav.setYawWanted(yW);
+                uav.setPitchWanted(xW);
+
+            }
         }
         public static boolean isPiloting() {
             return drone != null;
-        }
-        public void updateLookClientSide(double mouseYaw, double mousePitch) {
-            yRotO = yRot;
-            xRotO = xRot;
-            yRot = (float) mouseYaw;
-            xRot = (float) mousePitch;
         }
     }
 
@@ -108,22 +132,15 @@ public class ClientDroneManager {
         if (Minecraft.getInstance().isPaused()) return;
         if (!PilotingClientState.isPiloting())
             return;
-
         if (PilotingClientState.drone instanceof AbstractUAV uav) {
-            event.setYaw(PilotingClientState.yRot);
-            event.setPitch(PilotingClientState.xRot);
-            event.setRoll(
-                    (float) Mth.lerp(
-                            event.getPartialTick(),
-                            PilotingClientState.rollO,
-                            PilotingClientState.roll
-                    )
-            );
-
-            PilotingClientState.drone.updateLookClientSide(
+            float partialTick = (float) event.getPartialTick();
+            event.setYaw(PilotingClientState.yW);
+            event.setPitch(PilotingClientState.xW);
+            //event.setRoll(uav.getRenderRoll(partialTick));
+            /*uav.updateLookClientSide(
                     PilotingClientState.xRot,
                     PilotingClientState.yRot
-            );
+            );*/
         } else {
             event.setYaw(PilotingClientState.yRot);
             event.setPitch(PilotingClientState.xRot);

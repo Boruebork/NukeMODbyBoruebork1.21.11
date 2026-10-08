@@ -20,7 +20,6 @@ public class RQ4 extends AbstractUAV {
         return 0.05f;
     }
 
-    @Override
     protected float getYawPerRollDegreePerTick() {
         return 1;
     }
@@ -32,5 +31,20 @@ public class RQ4 extends AbstractUAV {
 
     public RQ4(EntityType<?> entityType, Level level) {
         super(entityType, level);
+    }
+
+    @Override
+    protected float getRollStep() {
+        return 2f;
+    }
+
+    @Override
+    protected float getMaxRoll() {
+        return 90f;
+    }
+
+    @Override
+    protected float getRollFactor() {
+        return 2f;
     }
 }

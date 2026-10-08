@@ -143,7 +143,11 @@ public abstract class AbstractDrone extends Entity {
         this.controllerId = player.getUUID();
         DroneManager.getInstance().addEntry(player, this);
         this.entityData.set(CONTROLLER_DATA, this.controllerId.toString());
+        this.onPlayerEnter(player);
         return InteractionResult.SUCCESS;
+    }
+
+    protected void onPlayerEnter(Player player) {
     }
 
     @Override

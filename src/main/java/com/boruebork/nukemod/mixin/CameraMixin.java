@@ -39,7 +39,7 @@ public abstract class CameraMixin {
 
         Vector3f local = new Vector3f(0f, 3f, -10f); // 3rd person
         if (detached) {
-            this.setPosition(uav.camPosFrom(uav, local, partialTick));
+            this.setPosition(uav.camPosFrom(local, partialTick));
             return;
         }
         this.setPosition(uav.getRenderPosition(partialTick));
