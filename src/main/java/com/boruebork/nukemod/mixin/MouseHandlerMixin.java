@@ -1,9 +1,7 @@
 package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
-import com.boruebork.nukemod.ooblib.AbstractUAV;
+import com.boruebork.nukemod.drone.AbstractDrone;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.util.SmoothDouble;

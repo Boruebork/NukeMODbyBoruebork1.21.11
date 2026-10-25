@@ -1,6 +1,6 @@
 package com.boruebork.nukemod.entity.custom;
 
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
+import com.boruebork.nukemod.drone.AbstractDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.DroneProjectile;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
@@ -20,7 +20,7 @@ public class Grenade extends Entity implements DroneProjectile {
         super(entityType, level);
     }
 
-    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractFPVProjectileLaunchingDrone parent) {
+    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractDrone parent) {
         this.setDeltaMovement(speed);
         this.setXRot(xRot);
         this.setYRot(yRot);

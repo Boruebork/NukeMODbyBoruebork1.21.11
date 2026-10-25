@@ -42,5 +42,6 @@ public class RocketDroneRenderer extends AbstractFPVRenderer<RocketDrone, Rocket
     public void extractRenderState(RocketDrone entity, RocketDroneRenderState reusedState, float partialTick) {
         super.extractRenderState(entity, reusedState, partialTick);
         reusedState.nextRocket = entity.getNextRocket();
+        System.out.printf("Drone yaw:" + reusedState.yRot + "pitch:" + reusedState.xRot);
     }
 }

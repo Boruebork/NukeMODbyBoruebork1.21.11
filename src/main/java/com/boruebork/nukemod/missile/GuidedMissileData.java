@@ -30,7 +30,7 @@ public class GuidedMissileData extends MissileData {
                 missile.position(),
                 missile.getDir(),
                 missile.targetPlayer().position(),
-                missile.speed
+                missile.speed()
         );
         this.id = missile.getUUID();
         this.targetUUID = missile.targetPlayer().getUUID();

@@ -76,16 +76,13 @@ public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
     @Override
     public void extractRenderState(RQ4 entity, RQ4RenderState reusedState, float partialTick) {
         super.extractRenderState(entity, reusedState, partialTick);
-        // Same orientation as OBBs / camera. PilotingClientState will desync the mesh.
-        if (ClientDroneManager.PilotingClientState.drone == entity){
-            reusedState.xRot = entity.getXRot(partialTick);
-            reusedState.yRot = entity.getYRot(partialTick);
-            reusedState.zRot =  entity.getRenderRoll(partialTick);
-            reusedState.cameraPos = entity.getCameraPosition(partialTick);
-        }else{
-            reusedState.xRot = entity.getXRot(partialTick);
-            reusedState.yRot = entity.getYRot(partialTick);
-            reusedState.zRot =  entity.getRenderRoll(partialTick);
-        }
+        reusedState.xRot = entity.getXRot(partialTick);
+        reusedState.yRot = entity.getYRot(partialTick);
+        reusedState.zRot = entity.getRenderRoll(partialTick);
+        //System.err.println("zRot: " + entity.roll + "zRotO: " + entity.rollO);
+        /*System.out.printf("xo=%.4f x=%.4f pt=%.3f  yo=%.4f y=%.4f%n",
+                entity.xo, entity.getX(), partialTick,
+                entity.yo, entity.getY());*/
+        //System.err.println("xRot: " + reusedState.xRot + " yRot: " + reusedState.yRot + " zRot: " + reusedState.zRot);
     }
 }

@@ -2,7 +2,6 @@ package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.ModEntities;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.ooblib.AbstractUAV;
@@ -63,7 +62,8 @@ public class DroneHudRegistration {
                     "Mode:  " +  ClientDroneManager.PilotingClientState.mode.name(),
                     width - 50, height - 20, Colors.GREEN
             );
-            renderCenterSquare(graphics, centerX, centerY);
+            renderCircleOutline(graphics, centerX, centerY, 7, 1, Colors.GREEN);
+            //renderCenterSquare(graphics, centerX, centerY);
             renderBoresight(graphics, uav, partialTick, width, height);
             return;
         }
@@ -103,6 +103,13 @@ public class DroneHudRegistration {
                 i++;
             }
         }
+        if (ClientDroneManager.PilotingClientState.drone instanceof AbstractUAV) {
+            graphics.drawString(
+                    Minecraft.getInstance().font,
+                    "HEALTH: " + ClientDroneManager.PilotingClientState.drone.getEntityData().get(AbstractUAV.HEALTH_DATA),
+                    width -100, height - 20, Colors.GREEN
+            );
+        }
     }
 
     /**
@@ -135,7 +142,9 @@ public class DroneHudRegistration {
         Vector3f look = new Vector3f(camera.forwardVector());
         Vector3f up = new Vector3f(camera.upVector());
         Vector3f right = new Vector3f(camera.leftVector()).negate(); // left -> right
-
+        if (uav.getPatrolCenter() != null && ClientDroneManager.PilotingClientState.mode == ClientDroneManager.PilotingClientState.PilotingMode.PATROL) {
+            renderBlockMarker(graphics, uav.getPatrolCenter(), width, height, Colors.ORANGE, partialTick);
+        }
         float forwardComp = relative.dot(look);
         if (forwardComp <= 0.01f) return; // nose pointing behind the camera entirely
 
@@ -159,6 +168,7 @@ public class DroneHudRegistration {
 
         graphics.hLine(px - BORESIGHT_SIZE, px + BORESIGHT_SIZE, py, Colors.GREEN);
         graphics.vLine(px, py - BORESIGHT_SIZE, py + BORESIGHT_SIZE, Colors.GREEN);
+
     }
 
     /**
@@ -256,11 +266,11 @@ public class DroneHudRegistration {
         int py = Math.round((0.5f - ndcY * 0.5f) * screenH);
         return new int[]{px, py};
     }
-    private static void renderBlockMarker(GuiGraphics graphics, BlockPos pos, int screenW, int screenH, int color) {
+    private static void renderBlockMarker(GuiGraphics graphics, BlockPos pos, int screenW, int screenH, int color, float partialTick) {
         Minecraft mc = Minecraft.getInstance();
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 worldCenter = Vec3.atCenterOf(pos);
-        float fovDeg = mc.options.fov().get();
+        float fovDeg = zoomedFovDeg(mc.options.fov().get(), partialTick);
 
         int[] screen = worldToScreen(camera, worldCenter, screenW, screenH, fovDeg);
         if (screen == null) return;
@@ -273,12 +283,13 @@ public class DroneHudRegistration {
         // graphics.fill(screen[0] - radius, screen[1] - radius, screen[0] + radius, screen[1] + radius, color);
     }
     private static void renderCircleOutline(GuiGraphics graphics, int cx, int cy, int radius, int thickness, int color) {
-        int segments = Math.max(16, radius * 2);
+        int segments = Math.max(64, (int) Math.ceil(radius * 8));  // ~1px spacing
+        int t = Math.max(2, thickness);                            // ≥2 so dots touch
         for (int i = 0; i < segments; i++) {
             double angle = (2 * Math.PI * i) / segments;
             int px = cx + (int) Math.round(radius * Math.cos(angle));
             int py = cy + (int) Math.round(radius * Math.sin(angle));
-            graphics.fill(px, py, px + thickness, py + thickness, color);
+            graphics.fill(px, py, px + t, py + t, color);
         }
     }
 
@@ -292,5 +303,11 @@ public class DroneHudRegistration {
             int dx = (int) Math.round(Math.sqrt((double) radius * radius - (double) dy * dy));
             graphics.fill(cx - dx, cy + dy, cx + dx, cy + dy + 1, color);
         }
+    }
+    private static float zoomedFovDeg(float baseFovDeg, float partialTick) {
+        float z = ClientDroneManager.PilotingClientState.getRenderZoom(partialTick);
+        if (z <= 1.001F) return baseFovDeg;
+        double half = Math.toRadians(baseFovDeg) * 0.5;
+        return (float) Math.toDegrees(2.0 * Math.atan(Math.tan(half) / z)); // same formula as onComputeFov
     }
 }

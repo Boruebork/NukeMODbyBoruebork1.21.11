@@ -1,71 +1,61 @@
 package com.boruebork.nukemod.entity.custom;
 
-import com.boruebork.nukemod.entity.custom.sound.MissileWarningSound;
 import com.boruebork.nukemod.explosion.ExplosionManager;
 import com.boruebork.nukemod.missile.MissileManager;
-import com.boruebork.nukemod.sound.ModSounds;
 import com.boruebork.nukemod.util.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-import static com.boruebork.nukemod.explosion.NukeConfig.SIREN_ACTIVATION_DISTANCE;
-
 public class GuidedMissile extends Projectile {
 
-    public void setWarningSound(MissileWarningSound o) {
-        this.warning = o;
+    public enum MissileState {
+        LAUNCH,
+        CRUISE,
+        PREDATOR
     }
 
-    public enum MissileState {
-        LAUNCH,    // Вертикальный взлет вверх
-        CRUISE,    // Горизонтальный полет на большой высоте к цели
-        PREDATOR   // Финальное пикирование строго на игрока
-    }
     public enum LockingState {
         LOCKED,
         NA
     }
-    private boolean active = false;
+
+    private static final double MAX_SPEED = 2.0;
+    private static final double CRUISE_HEIGHT = 120.0;
+
+    private boolean active;
+    private int explosionShield = 30;
+
     private LivingEntity targetPlayer;
-    private int explosionSHield = 30;
-    private MissileState currentState = MissileState.LAUNCH;
-    private Vec3 direction = new Vec3(0,0,0);
-    private Vec3 lastTargetPosition;
-    private LockingState state;
-    public double speed;
     private UUID targetUUID;
-    private MissileWarningSound siren; //onlu client side
-    private int soundTick = 0;
-    private static final double maxSpeed = 2;
-    // Настройки баллистики
-    private final double cruiseHeight = 120.0; // Высота (Y), на которую ракета поднимается (выше деревьев/гор)
-    // Повышенная скорость для баллистической ракеты
-    private final float turnSpeed = 0.08f;     // Медленный разворот на фазе круиза для красивой дуги
+
+    private MissileState currentState = MissileState.LAUNCH;
+    private LockingState state;
+
+    private Vec3 direction = Vec3.ZERO;
+    private Vec3 lastTargetPosition;
+
+    private double speed;
+
 
     public GuidedMissile(EntityType<? extends Projectile> type, Level level) {
         super(type, level);
     }
+
+
     public void setTarget(LivingEntity player) {
         this.targetPlayer = player;
         this.targetUUID = player.getUUID();
@@ -78,90 +68,62 @@ public class GuidedMissile extends Projectile {
 
         this.setSilent(false);
     }
-    public void activate(){
+
+
+    public void activate() {
         this.active = true;
     }
+
+
     @Override
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
-
     }
+
 
     @Override
     protected void onHit(HitResult result) {
-        if (result.getType() == HitResult.Type.ENTITY || result.getType() == HitResult.Type.BLOCK){
+        if (result.getType() == HitResult.Type.ENTITY
+                || result.getType() == HitResult.Type.BLOCK) {
+
             MissileManager.queuePhysicalRemoval(this);
-            ExplosionManager.addExplosion((ServerLevel) this.level(), Util.Vec3toVec3i(this.position()));
-            this.discard();
+
+            ExplosionManager.addExplosion(
+                    (ServerLevel) level(),
+                    Util.Vec3toVec3i(position())
+            );
+
+            discard();
         }
     }
-    MissileWarningSound warning = null;
+
+
     @Override
     public void tick() {
         super.tick();
 
-        // -------------------------
-        // CLIENT
-        // -------------------------
         if (level().isClientSide()) {
-
-            if (soundTick <= 0) {
-                this.playSound(
-                        ModSounds.MISSILE_LAUNCH.get(),
-                        0.5f,
-                        1f
-                );
-                soundTick = 20;
-            } else {
-                soundTick--;
-            }
-
-            LocalPlayer player = Minecraft.getInstance().player;
-
-            if (player != null
-                    && player.distanceTo(this) < SIREN_ACTIVATION_DISTANCE) {
-
-                if (warning == null) {
-                    warning = new MissileWarningSound(this);
-                    Minecraft.getInstance()
-                            .getSoundManager()
-                            .play(warning);
-                }
-            }
-
             return;
         }
 
-        // -------------------------
-        // SERVER
-        // -------------------------
-
         ServerLevel serverLevel = (ServerLevel) level();
 
-        // Resolve target UUID -> actual player.
-        // This is important after loading the entity from disk.
+        // Resolve target after loading from disk.
         if (targetPlayer == null && targetUUID != null) {
             targetPlayer = serverLevel.getServer()
                     .getPlayerList()
                     .getPlayer(targetUUID);
         }
 
-        // -------------------------
-        // ACTIVATION
-        // -------------------------
-
+        // Wait until the target is available.
         if (!active) {
             if (targetPlayer != null) {
                 active = true;
             } else {
-                // Target hasn't joined/loaded yet.
                 return;
             }
         }
 
-        // -------------------------
-        // TARGET VALIDITY
-        // -------------------------
-
+        // Check target validity.
         if (targetPlayer == null
                 || !targetPlayer.isAlive()
                 || targetPlayer.level() != level()) {
@@ -170,14 +132,10 @@ public class GuidedMissile extends Projectile {
 
         } else if (state == LockingState.LOCKED) {
 
-            // Keep updating the last known position while locked.
             lastTargetPosition = targetPlayer.position();
         }
 
-        // -------------------------
-        // DETERMINE TARGET POSITION
-        // -------------------------
-
+        // Determine target position.
         Vec3 targetPos;
 
         if (state == LockingState.LOCKED && targetPlayer != null) {
@@ -186,29 +144,18 @@ public class GuidedMissile extends Projectile {
             targetPos = lastTargetPosition;
         }
 
-        // If we don't have any target position at all,
-        // there's nothing meaningful we can do.
         if (targetPos == null) {
             return;
         }
 
-        // -------------------------
-        // GUIDANCE
-        // -------------------------
-
+        // Guidance.
         switch (currentState) {
-
             case LAUNCH -> tickLaunch();
-
             case CRUISE -> tickCruise(targetPos);
-
             case PREDATOR -> tickTerminal(targetPos);
         }
 
-        // -------------------------
-        // ROTATION
-        // -------------------------
-
+        // Rotation.
         float yaw = (float) Math.toDegrees(
                 Math.atan2(-direction.x, direction.z)
         );
@@ -219,10 +166,7 @@ public class GuidedMissile extends Projectile {
 
         setRot(yaw, pitch);
 
-        // -------------------------
-        // MOVEMENT
-        // -------------------------
-
+        // Movement.
         setDeltaMovement(direction.scale(speed));
 
         move(
@@ -230,11 +174,8 @@ public class GuidedMissile extends Projectile {
                 getDeltaMovement()
         );
 
-        // -------------------------
-        // COLLISION / EXPLOSION
-        // -------------------------
-
-        if (explosionSHield <= 0) {
+        // Collision / explosion.
+        if (explosionShield <= 0) {
 
             if (horizontalCollision
                     || verticalCollision
@@ -252,13 +193,10 @@ public class GuidedMissile extends Projectile {
             }
 
         } else {
-            explosionSHield--;
+            explosionShield--;
         }
 
-        // -------------------------
-        // PARTICLES
-        // -------------------------
-
+        // Missile trail.
         if (tickCount % 2 == 0) {
             level().addParticle(
                     ParticleTypes.FLAME,
@@ -271,78 +209,95 @@ public class GuidedMissile extends Projectile {
             );
         }
     }
+
+
     private void tickLaunch() {
-        speed = Math.min(speed + 0.1, maxSpeed);
+        speed = Math.min(speed + 0.1, MAX_SPEED);
+
         Vec3 desiredDirection =
                 direction.add(0, 1.0, 0).normalize();
 
-        direction = direction.lerp(
-                desiredDirection,
-                0.1
-        ).normalize();
+        direction = direction
+                .lerp(desiredDirection, 0.1)
+                .normalize();
 
-        if (getY() >= cruiseHeight) {
+        if (getY() >= CRUISE_HEIGHT) {
             currentState = MissileState.CRUISE;
         }
     }
-    private void tickCruise(Vec3 targetPos) {
-        speed = Math.min(speed + 0.05, maxSpeed);
 
-        Vec3 toTarget =
-                targetPos.subtract(position());
-        double horizontalDistance =
-                Math.sqrt(
-                        toTarget.x * toTarget.x +
-                                toTarget.z * toTarget.z
-                );
+
+    private void tickCruise(Vec3 targetPos) {
+        speed = Math.min(speed + 0.05, MAX_SPEED);
+
+        Vec3 toTarget = targetPos.subtract(position());
+
+        double horizontalDistance = Math.sqrt(
+                toTarget.x * toTarget.x
+                        + toTarget.z * toTarget.z
+        );
+
         if (horizontalDistance < 30) {
             currentState = MissileState.PREDATOR;
-            //System.err.println("swithcing to preadtor");
             return;
         }
-        double altitudeError =
-                cruiseHeight - getY();
 
-        Vec3 desiredDirection =
-                new Vec3(
-                        toTarget.x,
-                        altitudeError * 0.1,
-                        toTarget.z
-                ).normalize();
+        double altitudeError = CRUISE_HEIGHT - getY();
 
-        direction = direction.lerp(
-                desiredDirection,
-                0.05
+        Vec3 desiredDirection = new Vec3(
+                toTarget.x,
+                altitudeError * 0.1,
+                toTarget.z
         ).normalize();
+
+        direction = direction
+                .lerp(desiredDirection, 0.05)
+                .normalize();
     }
+
+
     private void tickTerminal(Vec3 targetPos) {
-        //System.err.println("hunting!");
-        speed = maxSpeed;
+        speed = MAX_SPEED;
 
         Vec3 desiredDirection =
                 targetPos.subtract(position())
                         .normalize();
 
-        direction = direction.lerp(
-                desiredDirection,
-                0.15
-        ).normalize();
+        direction = direction
+                .lerp(desiredDirection, 0.15)
+                .normalize();
     }
 
+
     @Override
-    public boolean hurtServer(ServerLevel serverLevel, DamageSource damageSource, float v) {
+    public boolean hurtServer(
+            ServerLevel serverLevel,
+            DamageSource damageSource,
+            float damage
+    ) {
         return false;
     }
+
+
     @Override
     protected void addAdditionalSaveData(ValueOutput output) {
         if (targetUUID != null) {
-            output.putString("TargetUUID", targetUUID.toString());
+            output.putString(
+                    "TargetUUID",
+                    targetUUID.toString()
+            );
         }
 
-        output.putString("MissileState", currentState.name());
+        output.putString(
+                "MissileState",
+                currentState.name()
+        );
+
         output.putString(
                 "LockingState",
-                state != null ? state.name() : LockingState.NA.name()
+                state != null
+                        ? state.name()
+                        : LockingState.NA.name()
         );
 
         output.putDouble("Speed", speed);
@@ -358,23 +313,24 @@ public class GuidedMissile extends Projectile {
         }
 
         output.putBoolean("Active", active);
-        output.putInt("ExplosionShield", explosionSHield);
+        output.putInt("ExplosionShield", explosionShield);
     }
+
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
 
         input.getString("TargetUUID").ifPresent(s -> {
             try {
-                this.targetUUID = UUID.fromString(s);
+                targetUUID = UUID.fromString(s);
             } catch (IllegalArgumentException e) {
-                this.targetUUID = null;
+                targetUUID = null;
             }
         });
 
-        this.targetPlayer = null;
+        targetPlayer = null;
 
-        this.currentState = input.getString("MissileState")
+        currentState = input.getString("MissileState")
                 .map(s -> {
                     try {
                         return MissileState.valueOf(s);
@@ -384,7 +340,7 @@ public class GuidedMissile extends Projectile {
                 })
                 .orElse(MissileState.LAUNCH);
 
-        this.state = input.getString("LockingState")
+        state = input.getString("LockingState")
                 .map(s -> {
                     try {
                         return LockingState.valueOf(s);
@@ -394,23 +350,26 @@ public class GuidedMissile extends Projectile {
                 })
                 .orElse(LockingState.NA);
 
-        this.speed = input.getDoubleOr("Speed", 0.0);
+        speed = input.getDoubleOr("Speed", 0.0);
 
-        this.direction = new Vec3(
+        direction = new Vec3(
                 input.getDoubleOr("DirectionX", 0.0),
                 input.getDoubleOr("DirectionY", 0.0),
                 input.getDoubleOr("DirectionZ", 0.0)
         );
 
-        this.lastTargetPosition = new Vec3(
+        lastTargetPosition = new Vec3(
                 input.getDoubleOr("TargetX", 0.0),
                 input.getDoubleOr("TargetY", 0.0),
                 input.getDoubleOr("TargetZ", 0.0)
         );
 
-        this.active = input.getBooleanOr("Active", false);
-        this.explosionSHield = input.getIntOr("ExplosionShield", 30);
+        active = input.getBooleanOr("Active", false);
+
+        explosionShield =
+                input.getIntOr("ExplosionShield", 30);
     }
+
 
     public Vec3 getDir() {
         return direction;
@@ -445,12 +404,9 @@ public class GuidedMissile extends Projectile {
     }
 
     public double cruiseHeight() {
-        return cruiseHeight;
+        return CRUISE_HEIGHT;
     }
 
-    public float turnSpeed() {
-        return turnSpeed;
-    }
 
     public void setDirection(Vec3 direction) {
         this.direction = direction;
@@ -476,4 +432,3 @@ public class GuidedMissile extends Projectile {
         this.active = active;
     }
 }
-

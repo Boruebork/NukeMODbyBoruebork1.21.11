@@ -1,7 +1,8 @@
 package com.boruebork.nukemod.entity.custom;
 
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
+import com.boruebork.nukemod.drone.AbstractDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.DroneProjectile;
+import com.boruebork.nukemod.ooblib.HasHitboxParts;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -17,12 +18,12 @@ import net.minecraft.world.phys.Vec3;
 
 public class Rocket extends Entity implements DroneProjectile {
     private int ticks = 0;
-    private AbstractFPVProjectileLaunchingDrone parent;
+    private AbstractDrone parent;
     public Rocket(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
 
-    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractFPVProjectileLaunchingDrone parent) {
+    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractDrone parent) {
         this.setDeltaMovement(Vec3.directionFromRotation(xRot, yRot).normalize().scale(3).add(speed));
         this.setXRot(xRot);
         this.setYRot(yRot);
@@ -42,7 +43,7 @@ public class Rocket extends Entity implements DroneProjectile {
         if (hitBlock) {
             explode();
         }
-        HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, e -> e.isPickable() && e != parent);
+        HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, e -> (e.isPickable() || e instanceof HasHitboxParts) && e != parent);
         if (hitResult.getType() != HitResult.Type.MISS) {
             this.setPos(hitResult.getLocation());
             explode();

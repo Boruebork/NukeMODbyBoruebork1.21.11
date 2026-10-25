@@ -1,7 +1,6 @@
 package com.boruebork.nukemod.entity.custom.radar;
 
 import com.boruebork.nukemod.entity.NukeMODEntityDataSerializers;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -73,9 +72,9 @@ public abstract class AbstractRadar extends Entity {
         super.tick();
         if (scanCooldown <= 0){
             if (level().isClientSide()){
-                if (Minecraft.getInstance().screen instanceof RadarScreen screen){
+               /* if (Minecraft.getInstance().screen instanceof RadarScreen screen){
                     screen.update(this);
-                }
+                }*/
             }else {
                 scan();
             }
@@ -142,7 +141,7 @@ public abstract class AbstractRadar extends Entity {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (level().isClientSide() && canOpenGUI()) {
-            Minecraft.getInstance().setScreen(new RadarScreen(this));
+           // Minecraft.getInstance().setScreen(new RadarScreen(this));
             return InteractionResult.SUCCESS;
         }
         return super.interact(player, hand);

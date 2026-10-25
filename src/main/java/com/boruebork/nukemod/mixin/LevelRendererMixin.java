@@ -1,7 +1,6 @@
 package com.boruebork.nukemod.mixin;
 
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
+import com.boruebork.nukemod.drone.AbstractDrone;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;

@@ -1,11 +1,9 @@
-package com.boruebork.nukemod.entity.custom.fpvdrones;
+package com.boruebork.nukemod.drone;
 // NOTE: adjust this package to wherever you actually want the generic base
 // to live -- I've put it one level up from .fpvdrones since the whole point
 // is that other drone types (non-FPV) could extend this too. Update the
 // import in AbstractFPVDrone.java to match if you move it elsewhere.
 
-import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -16,10 +14,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.InterpolationHandler;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -32,7 +32,14 @@ import java.util.UUID;
  * entirely might fly very differently while still wanting the same
  * piloting handshake and roll-banking behavior.
  */
-public abstract class AbstractDrone extends Entity {
+public abstract class AbstractDrone extends Entity implements Pilotable {
+    protected InterpolationHandler interpolation = new InterpolationHandler(this);
+    protected PilotSeat pilotSeat;
+
+    @Override
+    public PilotSeat pilotSeat() {
+        return pilotSeat;
+    }
 
     // --- piloting / camera ---
     private UUID controllerId;
@@ -51,6 +58,7 @@ public abstract class AbstractDrone extends Entity {
 
     public AbstractDrone(EntityType<?> entityType, Level level) {
         super(entityType, level);
+        this.pilotSeat = new PilotSeat(this, CONTROLLER_DATA);
     }
 
     @Override
@@ -58,51 +66,56 @@ public abstract class AbstractDrone extends Entity {
         builder.define(CONTROLLER_DATA, this.controllerId == null ? "" : this.controllerId.toString());
         builder.define(ROLL_DATA, 0f);
     }
-
+    @Override
+    public @Nullable InterpolationHandler getInterpolation() {
+        return this.interpolation;
+    }
     @Override
     public void tick() {
         super.tick();
 
         if (level().isClientSide()) {
-            if (!this.entityData.get(CONTROLLER_DATA).isEmpty()) {
-                if (ClientDroneManager.PilotingClientState.drone == null) {
+            boolean isLocalPilot = ClientDroneManager.PilotingClientState.drone == this;
+
+            // Mount the camera when the server tells us we're the controller.
+            if (!isLocalPilot && !this.entityData.get(CONTROLLER_DATA).isEmpty()) {
+                if (ClientDroneManager.PilotingClientState.drone == null
+                        && ClientDroneManager.checkIfPilot(this)) {
                     ClientDroneManager.PilotingClientState.drone = this;
                     ClientDroneManager.PilotingClientState.yRot = this.getYRot();
                     ClientDroneManager.PilotingClientState.xRot = this.getXRot();
-                    Minecraft.getInstance().setCameraEntity(this);
-                }
-
-                if (ClientDroneManager.PilotingClientState.drone == this) {
-                    applyMovement(
-                            ClientDroneManager.PilotingClientState.z,
-                            ClientDroneManager.PilotingClientState.x,
-                            ClientDroneManager.PilotingClientState.up,
-                            ClientDroneManager.PilotingClientState.down,
-                            ClientDroneManager.PilotingClientState.movementYRot,
-                            ClientDroneManager.PilotingClientState.xRot
-                    );
-                    // applyMovement() just recomputed this.roll via updateRollTowards() --
-                    // mirror it every tick so the pilot's camera (onCameraAngles) sees it
-                    // change, not just at mount time.
+                    ClientDroneManager.PilotingClientState.cameraYaw = this.getYRot();
+                    ClientDroneManager.PilotingClientState.cameraPitch = this.getXRot();
                     ClientDroneManager.PilotingClientState.roll = this.roll;
                     ClientDroneManager.PilotingClientState.rollO = this.rollO;
+                    ClientDroneManager.PilotingClientState.mode = ClientDroneManager.PilotingClientState.PilotingMode.FIXED;
+                    Minecraft.getInstance().setCameraEntity(this);
+                    isLocalPilot = true;
                 }
             }
-        }
 
-        // --- roll sync/auto-level ---
-        // applyMovement() (implemented by subclasses) is the only place roll is actively
-        // *targeted*; it runs on whichever side is authoritative for this tick (the piloting
-        // client, or the server when it receives an input packet via updatePosRot). Everyone
-        // else just needs to mirror or settle it here.
-        if (level().isClientSide()) {
-            if (ClientDroneManager.PilotingClientState.drone != this) {
-                // third-party viewer (or nobody piloting): mirror the server-synced value
+            if (isLocalPilot && isClientAuthoritative()) {
+                // Client-authoritative path: run the flight model locally.
+                // No interpolation — we ARE the source of truth this tick.
+                /*applyMovement(
+                        ClientDroneManager.PilotingClientState.z,
+                        ClientDroneManager.PilotingClientState.x,
+                        ClientDroneManager.PilotingClientState.up,
+                        ClientDroneManager.PilotingClientState.down,
+                        ClientDroneManager.PilotingClientState.movementYRot,
+                        ClientDroneManager.PilotingClientState.xRot
+                );*/
+                onClientPrediction();
+                ClientDroneManager.PilotingClientState.roll  = this.roll;
+                ClientDroneManager.PilotingClientState.rollO = this.rollO;
+            } else {
+                // Observer: server-authoritative, smooth between packets.
+                interpolation.interpolate();
                 this.rollO = this.roll;
-                this.roll = this.entityData.get(ROLL_DATA);
+                this.roll  = this.entityData.get(ROLL_DATA);
             }
         } else if (!isBeingPiloted()) {
-            // server-authoritative auto-level: nobody's sending input packets right now
+            // Server auto-level when nobody is flying.
             this.rollO = this.roll;
             this.roll += (0f - this.roll) * ROLL_RECOVERY;
             this.entityData.set(ROLL_DATA, this.roll);
@@ -174,22 +187,25 @@ public abstract class AbstractDrone extends Entity {
 
     @Override
     public boolean isClientAuthoritative() {
-        return level().isClientSide() && ClientDroneManager.PilotingClientState.drone == this;
+        if (level().isClientSide()) {
+            return ClientDroneManager.PilotingClientState.drone == this;
+        }
+        return !this.getEntityData().get(CONTROLLER_DATA).isEmpty();
     }
 
     public boolean isBeingPiloted() {
         return !this.entityData.get(CONTROLLER_DATA).isEmpty();
     }
 
-    // Client-side, called every FRAME (e.g. from ClientTickEvent or a mouse-move hook),
+    // Client-side, called every FRAME (e.g., from ClientTickEvent or a mouse-move hook),
     // NOT from Entity#tick()
-    public void updateLookClientSide(double mouseYaw, double mousePitch) {
+    public void updateLookClientSide(double mousePitch, double mouseYaw) {
         if (ClientDroneManager.PilotingClientState.drone != this) return;
 
         this.yRotO = this.getYRot();
         this.xRotO = this.getXRot();
-        this.setYRot((float) mousePitch);
-        this.setXRot((float) mouseYaw);
+        this.setYRot((float) mouseYaw);
+        this.setXRot((float) mousePitch);
     }
 
     public float getRoll() {
@@ -201,10 +217,45 @@ public abstract class AbstractDrone extends Entity {
     }
 
     @Override
-    protected void addAdditionalSaveData(ValueOutput valueOutput) {
+    protected void addAdditionalSaveData(ValueOutput out) {
+        out.putString("Controller", this.controllerId == null ? "" : this.controllerId.toString());
+        out.putFloat("Roll", this.roll);
     }
 
     @Override
-    protected void readAdditionalSaveData(ValueInput valueInput) {
+    protected void readAdditionalSaveData(ValueInput in) {
+        String ctrl = in.getStringOr("Controller", "");
+        if (!ctrl.isEmpty()) {
+            try {
+                this.controllerId = UUID.fromString(ctrl);
+                this.entityData.set(CONTROLLER_DATA, ctrl);
+                //PacketDistributor.sendToPlayer(..., new DNotift);
+            } catch (IllegalArgumentException ignored) {
+                this.controllerId = null;
+                this.entityData.set(CONTROLLER_DATA, "");
+            }
+        }
+
+        this.roll = in.getFloatOr("Roll", 0f);
+        this.rollO = this.roll;
+    }
+    /** Called each tick on the pilot's own client when this drone is client-authoritative.
+     *  Implementations should run their local flight model here. */
+    protected void onClientPrediction() {
+        applyMovement(
+                ClientDroneManager.PilotingClientState.z,
+                ClientDroneManager.PilotingClientState.x,
+                ClientDroneManager.PilotingClientState.up,
+                ClientDroneManager.PilotingClientState.down,
+                ClientDroneManager.PilotingClientState.movementYRot,
+                ClientDroneManager.PilotingClientState.xRot);
+        ClientDroneManager.PilotingClientState.roll  = this.roll;
+        ClientDroneManager.PilotingClientState.rollO = this.rollO;
+    }
+    public final class PilotHooks {
+        public static ClientHook client;                   // set during client setup only
+        public interface ClientHook {
+            void tick(Pilotable v, boolean isLocalPilot);
+        }
     }
 }

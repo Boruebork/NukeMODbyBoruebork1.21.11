@@ -41,7 +41,7 @@ public class ModEntities {
             ENTITY_TYPES.register("nuke", () -> EntityType.Builder.of(NukeEntity::new,
                             MobCategory.MISC)
                     .sized(0.75f, 0.35f).build(NUKE_KEY));
-    public static final DeferredHolder<EntityType<?>, EntityType<GuidedMissile>> GUIDED_MISILE =
+  public static final DeferredHolder<EntityType<?>, EntityType<GuidedMissile>> GUIDED_MISILE =
             ENTITY_TYPES.register("guided_nuclear_missile", () -> EntityType.Builder.of(GuidedMissile::new,
                             MobCategory.MISC)
                     .sized(3, 1).build(GUIDED_MISSILE_KEY));
@@ -89,7 +89,7 @@ public class ModEntities {
     public static final Supplier<EntityType<RQ4>> RQ4 =
             ENTITY_TYPES.register("rq4", () -> EntityType.Builder.of(RQ4::new,
                             MobCategory.MISC)
-                    .sized(1f, 1)//.eyeHeight(1.0f)   // blocks at which the server keeps sending updates
+                    .sized(1f, 1).updateInterval(1)//.eyeHeight(1.0f)   // blocks at which the server keeps sending updates
                     .build(RQ4_KEy));
 
 

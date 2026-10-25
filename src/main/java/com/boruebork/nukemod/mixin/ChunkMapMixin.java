@@ -1,17 +1,26 @@
 package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.DroneManager;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
+import com.boruebork.nukemod.drone.AbstractDrone;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.entity.EntityAccess;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.List;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin {
@@ -46,5 +55,62 @@ public abstract class ChunkMapMixin {
             return new ChunkPos(drone.blockPosition());
         }
         return player.chunkPosition();
+    }
+    @Inject(
+            method = "collectSpawningChunks",
+            at = @At("TAIL")
+    )
+    private void droneforce$addDroneChunks(List<LevelChunk> output, CallbackInfo ci) {
+        ChunkMap self = (ChunkMap) (Object) this;
+
+        for (AbstractDrone d : DroneManager.getInstance().drones.keySet()) {
+            long packedPos = d.chunkPosition().toLong();
+            ChunkHolder holder = self.getVisibleChunkIfPresent(packedPos);
+            if (holder == null) continue;
+
+            LevelChunk chunk = holder.getTickingChunk();
+            if (chunk != null && !output.contains(chunk)) {
+                output.add(chunk);
+            }
+        }
+    }
+    @Inject(
+            method = "playerIsCloseEnoughForSpawning",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void droneforce$spawnCheckFromDrone(
+            ServerPlayer player,
+            ChunkPos chunkPos,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        if (player.isSpectator()) {
+            cir.setReturnValue(false);
+            return;
+        }
+
+        AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+        if (drone == null) {
+            return; // vanilla decides
+        }
+
+        double cx = chunkPos.getMinBlockX() + 8.0;
+        double cz = chunkPos.getMinBlockZ() + 8.0;
+        double dx = cx - drone.getX();
+        double dz = cz - drone.getZ();
+        cir.setReturnValue(dx * dx + dz * dz < 16384.0); // 128^2
+    }
+    @Shadow
+    @Final
+    ServerLevel level;
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void droneforce$retrackEntitiesForPilots(CallbackInfo ci) {
+        ChunkMap self = (ChunkMap) (Object) this;
+        for (ServerPlayer player : level.players()) {
+            AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+            if (drone != null) {
+                self.move(player);
+            }
+        }
     }
 }

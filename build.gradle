@@ -52,6 +52,14 @@ neoForge {
             systemProperty 'neoforge.disableGlValidation', 'true'
 
         }
+        client2 {
+            client()
+            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            gameDirectory = project.file('run/client2')
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            programArgument '--username'
+            programArgument 'Dev2'
+        }
 
         server {
             server()
@@ -121,7 +129,7 @@ dependencies {
     // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
     // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
     // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
-    implementation files("libs/obblib.jar")
+    //implementation files("libs/obblib.jar")
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
     // The group id is ignored when searching -- in this case, it is "blank"

@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.ooblib;
 
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -84,4 +85,33 @@ public interface HasHitboxParts {
 
     record HitResult(HitboxPart part, float distance) {
     }
+    default OBB getWorldOBB(HitboxPart part) {
+        return getWorldOBBAt(part, getEntityRotation(), self().getX(), self().getY(), self().getZ());
+    }
+    default OBB getWorldOBBAt(HitboxPart part, Quaternionf entityRot, double ex, double ey, double ez) {
+        Vector3f center = new Vector3f(part.localOffset()).sub(part.localPivot());
+        entityRot.transform(center);
+        center.add(part.localPivot());
+        center.add((float) ex, (float) ey, (float) ez);
+
+        Quaternionf worldRot = new Quaternionf(entityRot).mul(part.localRotation());
+        return new OBB(center, new Vector3f(part.localHalfExtents()), worldRot);
+    }
+    default OBB getWorldOBBAt(HitboxPart part, double entityX, double entityY, double entityZ) {
+        return getWorldOBBAt(part, getEntityRotation(), entityX, entityY, entityZ);
+    }
+    default AABB getOBBAABB(OBB obb) { return obb.toAABB(); }
+    default AABB getBroadphaseAABB() {
+        AABB result = null;
+        for (HitboxPart part : getHitboxParts()) {
+            AABB aabb = getOBBAABB(getWorldOBB(part));
+            result = result == null ? aabb : result.minmax(aabb);
+        }
+        return result == null ? self().getBoundingBox() : result;
+    }
+    default List<HitboxPart> getHitboxParts() {
+        return HitboxDefinitions.get(self().getType());
+    }
+    default boolean thisOBBsIntersect(OBB first, OBB second) { return first.intersects(second); }
+
 }

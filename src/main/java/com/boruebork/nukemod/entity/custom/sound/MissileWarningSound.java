@@ -37,7 +37,6 @@ public class MissileWarningSound extends AbstractTickableSoundInstance {
 
         if (player.distanceTo(missile) > 100) {
             stop();
-            this.missile.setWarningSound(null);
         }
 
         this.x = missile.getX();

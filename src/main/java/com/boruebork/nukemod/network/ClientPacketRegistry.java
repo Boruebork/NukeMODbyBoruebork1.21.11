@@ -2,10 +2,7 @@ package com.boruebork.nukemod.network;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.network.packet.DiscardNuclearExplPacket;
-import com.boruebork.nukemod.network.packet.NotifyClientDroneExit;
-import com.boruebork.nukemod.network.packet.NuclearExplosionUpdateClientPacket;
-import com.boruebork.nukemod.network.packet.SetTargetForClientBE;
+import com.boruebork.nukemod.network.packet.*;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -29,6 +26,10 @@ public class ClientPacketRegistry {
         event.register(
                 NotifyClientDroneExit.TYPE,
                 ClientDroneManager::exitDrone
+        );
+        event.register(
+                ReconcilePayload.TYPE,
+                ClientDroneManager::handleReconcile
         );
     }
 }

@@ -1,5 +1,6 @@
 package com.boruebork.nukemod.entity.custom.fpvdrones;
 
+import com.boruebork.nukemod.drone.AbstractDrone;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -17,10 +18,10 @@ import static net.minecraft.world.entity.player.Player.MAX_HEALTH;
 /**
  * FPV combat drone: explosion-only health, spinning rotor animation, and a
  * strafe/yaw-rate-banking flight model. Piloting and roll are handled by
- * {@link com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone}; this class only supplies what's specific to this
+ * {@link AbstractDrone}; this class only supplies what's specific to this
  * particular kind of drone.
  */
-public abstract class AbstractFPVDrone extends com.boruebork.nukemod.entity.custom.fpvdrones.AbstractDrone {
+public abstract class AbstractFPVDrone extends AbstractDrone {
 
     // --- health ---
     public static final EntityDataAccessor<Float> HEALTH_DATA =
