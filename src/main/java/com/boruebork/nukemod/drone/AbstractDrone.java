@@ -1,11 +1,5 @@
 package com.boruebork.nukemod.drone;
-// NOTE: adjust this package to wherever you actually want the generic base
-// to live -- I've put it one level up from .fpvdrones since the whole point
-// is that other drone types (non-FPV) could extend this too. Update the
-// import in AbstractFPVDrone.java to match if you move it elsewhere.
-
 import com.boruebork.nukemod.network.packet.DroneInputPayload;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -21,9 +15,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
-
 /**
  * Generic base for any entity that can be piloted via
  * Minecraft#setCameraEntity, with synced roll for banking/tilting while
@@ -63,37 +54,6 @@ public abstract class AbstractDrone extends Entity implements Pilotable {
     public AbstractDrone(EntityType<?> entityType, Level level) {
         super(entityType, level);
         this.pilotSeat = new PilotSeat(this, CONTROLLER_DATA);
-        if (level.isClientSide()) {
-            /*PilotHooks.client = (drone, isLocalPilot) -> {
-                // Mount the camera when the server tells us we're the controller.
-                if (!isLocalPilot && !this.entityData.get(CONTROLLER_DATA).isEmpty()) {
-                    if (ClientDroneManager.PilotingClientState.drone == null
-                            && ClientDroneManager.checkIfPilot(this)) {
-                        ClientDroneManager.PilotingClientState.drone = this;
-                        ClientDroneManager.PilotingClientState.yRot = this.getYRot();
-                        ClientDroneManager.PilotingClientState.xRot = this.getXRot();
-                        ClientDroneManager.PilotingClientState.cameraYaw = this.getYRot();
-                        ClientDroneManager.PilotingClientState.cameraPitch = this.getXRot();
-                        ClientDroneManager.PilotingClientState.roll = this.roll;
-                        ClientDroneManager.PilotingClientState.rollO = this.rollO;
-                        ClientDroneManager.PilotingClientState.mode = ClientDroneManager.PilotingClientState.PilotingMode.FIXED;
-                        Minecraft.getInstance().setCameraEntity(this);
-                        isLocalPilot = true;
-                    }
-                }
-
-                if (isLocalPilot && isClientAuthoritative()) {
-                    onClientPrediction();
-                    ClientDroneManager.PilotingClientState.roll  = this.roll;
-                    ClientDroneManager.PilotingClientState.rollO = this.rollO;
-                } else {
-                    // Observer: server-authoritative, smooth between packets.
-                    interpolation.interpolate();
-                    this.rollO = this.roll;
-                    this.roll  = this.entityData.get(ROLL_DATA);
-                }
-            };*/
-        }
     }
 
 
@@ -109,11 +69,9 @@ public abstract class AbstractDrone extends Entity implements Pilotable {
     @Override
     public void tick() {
         super.tick();
-
         if (level().isClientSide()) {
             PilotHooks.client.tick(this);
         } else if (!isBeingPiloted()) {
-            // Server auto-level when nobody is flying.
             this.rollO = this.roll;
             this.roll += (0f - this.roll) * ROLL_RECOVERY;
             this.entityData.set(ROLL_DATA, this.roll);
@@ -150,7 +108,7 @@ public abstract class AbstractDrone extends Entity implements Pilotable {
         if (level().isClientSide()) return InteractionResult.FAIL;
         System.err.println("Server");
         if (!(player instanceof ServerPlayer sp) || !pilotSeat.tryEnter(sp)) return super.interact(player, hand);
-        System.err.println("player entitern");
+        System.err.println("player entering");
         onPlayerEnter(player);
         return InteractionResult.SUCCESS;
     }
@@ -161,13 +119,12 @@ public abstract class AbstractDrone extends Entity implements Pilotable {
 
     @Override
     protected void addAdditionalSaveData(ValueOutput out) {
-        pilotSeat.save(out);
         out.putFloat("Roll", roll);
     }
     @Override
     protected void readAdditionalSaveData(ValueInput in) {
-        pilotSeat.load(in);
-        roll = in.getFloatOr("Roll", 0f); rollO = roll;
+        roll = in.getFloatOr("Roll", 0f);
+        rollO = roll;
     }
 
     protected void onPlayerEnter(Player player) {

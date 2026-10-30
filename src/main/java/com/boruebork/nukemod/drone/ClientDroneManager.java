@@ -99,34 +99,6 @@ public class ClientDroneManager {
                     PilotingClientState.cameraYaw
             ));
         } else if (PilotingClientState.drone instanceof AbstractUAV uav) {
-            // Compute sticks from camera error (FIXED) or send zeros (FREE/PATROL)
-            /*float stickPitch = 0f, stickYaw = 0f, stickRoll = 0f;
-
-            if (PilotingClientState.mode == PilotingClientState.PilotingMode.FIXED) {
-                float yawErr   = Mth.wrapDegrees(PilotingClientState.cameraYaw - uav.getYRot());
-                // Trim: drone needs ~5° AoA to fly level. Camera level = drone 5° nose up.
-                final float LEVEL_FLIGHT_AOA = 5.0f;
-                float pitchErr = Mth.wrapDegrees(
-                        PilotingClientState.cameraPitch - LEVEL_FLIGHT_AOA - uav.getXRot()
-                );      stickYaw   = Mth.clamp(yawErr   / 30f, -1f, 1f);
-                stickPitch = Mth.clamp(pitchErr / 30f, -1f, 1f);
-                // bank into the turn: yaw error drives roll
-                stickRoll  = Mth.clamp(PilotingClientState.x, -1f, 1f);
-            }
-            // FREE and PATROL send zero — drone holds heading, server drives patrol
-
-            // throttle stick: keyboard forward/back
-            float throttle = PilotingClientState.z;   // your existing mapping
-
-            ClientPacketDistributor.sendToServer(new NewFixedWingPayload(
-                    uav.getId(),
-                    throttle,       // forward
-                    stickPitch,
-                    stickRoll,
-                    stickYaw,
-                    uav.getYRot(),
-                    PilotingClientState.mode.getStreamCodec()// optional: last-known for server-side debug
-            ));*/
             AbstractUAV.ClientSticks s = uav.computeClientSticks();
             ClientPacketDistributor.sendToServer(new NewFixedWingPayload(
                     uav.getId(),

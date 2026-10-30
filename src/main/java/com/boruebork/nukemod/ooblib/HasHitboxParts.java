@@ -20,8 +20,7 @@ import java.util.List;
  * for whatever that accessor actually is per entity type.
  */
 public interface HasHitboxParts {
-
-    Entity self();
+    default Entity self() { return (Entity) this; }
 
     Quaternionf getEntityRotation(); // world orientation of the entity's origin
 
@@ -66,7 +65,7 @@ public interface HasHitboxParts {
     /**
      * Convenience for hit-scan / projectile code: first part hit along a ray, or null.
      */
-    default HitResult raycastParts(Vector3f origin, Vector3f dir) {
+    default PartHit raycastParts(Vector3f origin, Vector3f dir) {
         List<HitboxPart> parts = HitboxDefinitions.get(self().getType());
         List<OBB> obbs = computeWorldHitboxes();
 
@@ -80,10 +79,10 @@ public interface HasHitboxParts {
                 bestPart = parts.get(i);
             }
         }
-        return bestPart == null ? null : new HitResult(bestPart, bestT);
+        return bestPart == null ? null : new PartHit(bestPart, bestT);
     }
 
-    record HitResult(HitboxPart part, float distance) {
+    record PartHit(HitboxPart part, float distance) {
     }
     default OBB getWorldOBB(HitboxPart part) {
         return getWorldOBBAt(part, getEntityRotation(), self().getX(), self().getY(), self().getZ());
@@ -113,5 +112,9 @@ public interface HasHitboxParts {
         return HitboxDefinitions.get(self().getType());
     }
     default boolean thisOBBsIntersect(OBB first, OBB second) { return first.intersects(second); }
-
+    default OBB getWorldOBBAt(HitboxPart part, Quaternionf rot, double x, double y, double z, float shrink) {
+        OBB o = getWorldOBBAt(part, rot, x, y, z);
+        o.halfExtents.sub(shrink, shrink, shrink).max(new Vector3f(0.001f));
+        return o;
+    }
 }

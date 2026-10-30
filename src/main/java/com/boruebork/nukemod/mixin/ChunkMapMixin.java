@@ -67,7 +67,7 @@ public abstract class ChunkMapMixin {
     private void droneforce$addDroneChunks(List<LevelChunk> output, CallbackInfo ci) {
         ChunkMap self = (ChunkMap) (Object) this;
 
-        for (var it = getInstance().pilotedDrones.iterator(); it.hasNext();) {
+        for (var it = getInstance().pilotedDrones().iterator(); it.hasNext();) {
             long packedPos = it.next().chunkPosition().toLong();
             ChunkHolder holder = self.getVisibleChunkIfPresent(packedPos);
             if (holder == null) continue;
