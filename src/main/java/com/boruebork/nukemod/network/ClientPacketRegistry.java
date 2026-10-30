@@ -24,10 +24,6 @@ public class ClientPacketRegistry {
                 ClientPayloadHandler::handleSetTargeForBE
         );
         event.register(
-                NotifyClientDroneExit.TYPE,
-                ClientDroneManager::exitDrone
-        );
-        event.register(
                 ReconcilePayload.TYPE,
                 ClientDroneManager::handleReconcile
         );

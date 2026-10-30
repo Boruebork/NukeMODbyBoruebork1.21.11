@@ -51,10 +51,6 @@ public class ServerPacketRegistry {
                 ExitDronePacket.STREAM_CODEC,
                 DroneManager::exitDrone
         );
-        registrar.playToClient(
-                NotifyClientDroneExit.TYPE,
-                NotifyClientDroneExit.STREAM_CODEC
-        );
         registrar.playToServer(
                 SetProjectileModePayload.TYPE,
                 SetProjectileModePayload.STREAM_CODEC,
@@ -65,11 +61,6 @@ public class ServerPacketRegistry {
                 DroneLaucnhProjectilePayload.STREAM_CODEC,
                 DroneManager::launchDroneProjectile
         );
-        /*registrar.playToServer(
-                FixedWingInputPayload.TYPE,
-                FixedWingInputPayload.STREAM_CODEC,
-                DroneManager::onFixedWingInputUpdate
-        );*/
         registrar.playToServer(
                 NewFixedWingPayload.TYPE,
                 NewFixedWingPayload.STREAM_CODEC,

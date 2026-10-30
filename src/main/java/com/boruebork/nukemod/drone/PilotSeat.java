@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -22,25 +23,29 @@ public final class PilotSeat {
 
     public void define(SynchedEntityData.Builder b) { b.define(data, ""); }
 
-    public boolean isOccupied() { return !owner.getEntityData().get(data).isEmpty(); }
-
+    public boolean isOccupied() {
+        System.err.println(owner.getEntityData().get(data));
+        return !owner.getEntityData().get(data).isEmpty();
+    }
+    // PilotSeat
+    public void release() {
+        if (pilotId == null) return;
+        UUID pid = pilotId;
+        pilotId = null;
+        owner.getEntityData().set(data, "");
+        DroneManager.getInstance().onSeatReleased(pid, owner.getUUID());
+    }
+    public @Nullable UUID pilotId() { return pilotId; }
     /** Server. */
     public boolean tryEnter(ServerPlayer p) {
+        System.err.println(1);
         if (isOccupied()) return false;
+        System.err.println(2);
         pilotId = p.getUUID();
         owner.getEntityData().set(data, pilotId.toString());
         DroneManager.getInstance().register(p, (Pilotable) owner);
         return true;
     }
-
-    /** Server. */
-    public void release() {
-        if (pilotId == null) return;
-        DroneManager.getInstance().unregister(pilotId);
-        pilotId = null;
-        owner.getEntityData().set(data, "");
-    }
-
     public boolean isPilot(Player p) {                 // works on both sides
         return owner.getEntityData().get(data).equals(p.getUUID().toString());
     }

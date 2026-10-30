@@ -41,8 +41,10 @@ public abstract class AbstractFPVRenderer<T extends AbstractFPVDrone, S extends 
     public void extractRenderState(T entity, S reusedState, float partialTick) {
         super.extractRenderState(entity, reusedState, partialTick);
         if (ClientDroneManager.PilotingClientState.drone == entity){
-            reusedState.xRot = entity.getXRot(partialTick);
-            reusedState.yRot = entity.getYRot(partialTick);
+            reusedState.xRot = ClientDroneManager.PilotingClientState.cameraPitch;
+            reusedState.yRot = ClientDroneManager.PilotingClientState.cameraYaw;
+            //reusedState.xRot = entity.getXRot(partialTick);
+            //reusedState.yRot = entity.getYRot(partialTick);
             reusedState.zRot =  Mth.lerp(partialTick, ClientDroneManager.PilotingClientState.rollO, ClientDroneManager.PilotingClientState.roll);
             ;
         }else{

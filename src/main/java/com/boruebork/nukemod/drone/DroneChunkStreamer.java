@@ -11,7 +11,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import java.util.*;
 
 public class DroneChunkStreamer {
-    private static final int STREAM_RADIUS = 6; // chunks — keep modest, this is real bandwidth per chunk
+    /*private static final int STREAM_RADIUS = 6; // chunks — keep modest, this is real bandwidth per chunk
     private final Map<UUID, Set<ChunkPos>> streamedChunks = new HashMap<>();
     private Map<UUID, ChunkPos> lastStreamedCenter = new HashMap<>();
     public void onExit(ServerPlayer player) {
@@ -48,5 +48,5 @@ public class DroneChunkStreamer {
 
     private boolean isVanillaTracked(ServerPlayer player, ChunkPos pos) {
         return player.getChunkTrackingView().contains(pos);
-    }
+    }*/
 }

@@ -1,5 +1,6 @@
 package com.boruebork.nukemod.drone;
 
+import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.*;
@@ -12,14 +13,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.*;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
-import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.joml.Vector3fc;
@@ -31,6 +30,32 @@ import static com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone.CON
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientDroneManager {
+    private static UUID pendingMount;
+    private static int pendingTicks;
+    private static boolean confirmed;
+    private static int unconfirmedTicks;
+    static void enter(AbstractDrone d) {
+        PilotingClientState.drone = d;
+        PilotingClientState.mode = PilotingClientState.PilotingMode.FIXED;
+        PilotingClientState.cameraYaw   = PilotingClientState.cameraYawO   = d.getYRot();
+        PilotingClientState.cameraPitch = PilotingClientState.cameraPitchO = d.getXRot();
+        PilotingClientState.roll = PilotingClientState.rollO = d.roll;
+        PilotingClientState.resetZoom();
+        confirmed = false; unconfirmedTicks = 0;
+        Minecraft.getInstance().setCameraEntity(d);
+    }
+
+    static void exit(String reason, boolean tellServer) {
+        NukeModbyBoruebork.LOGGER.info("[pilot] client exit: {}", reason);
+        if (tellServer && PilotingClientState.drone != null)
+            ClientPacketDistributor.sendToServer(new ExitDronePacket());   // adjust to your record's constructor
+        PilotingClientState.drone = null;
+        PilotingClientState.patrolCenter = null;
+        PilotingClientState.resetZoom();
+        pendingMount = null;
+        var mc = Minecraft.getInstance();
+        if (mc.player != null) mc.setCameraEntity(mc.player);
+    }
     public static boolean checkIfPilot(AbstractDrone drone) {
         if (drone.getEntityData().get(CONTROLLER_DATA).isEmpty() || drone.getRemovalReason() == Entity.RemovalReason.DISCARDED) {
             return false;
@@ -46,7 +71,7 @@ public class ClientDroneManager {
         var player = Minecraft.getInstance().player;
         if (PilotingClientState.drone == null) return;
         if (player == null) {
-            PilotingClientState.drone = null;
+            exit( "player is null", true);
             return;
         }
         ClientInput input = event.getInput();
@@ -116,15 +141,6 @@ public class ClientDroneManager {
 
         }
     }
-    public static void exitDrone(NotifyClientDroneExit notifyClientDroneExit, IPayloadContext context) {
-        PilotingClientState.drone = null;
-        Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
-        PilotingClientState.drone = null;
-        PilotingClientState.resetZoom();
-        PilotingClientState.patrolCenter = null;// new
-        Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
-    }
-
     public static class PilotingClientState{
         public static AbstractDrone drone;
         public static float x;
@@ -297,26 +313,36 @@ public class ClientDroneManager {
     @SubscribeEvent
     public static void onClientTickPre(ClientTickEvent.Pre event) {
         if (Minecraft.getInstance().level == null) {
-            PilotingClientState.drone = null;
-            PilotingClientState.mode = PilotingClientState.PilotingMode.FIXED;
-            PilotingClientState.resetZoom();
-            if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
-            }
-            return;
+            exit("Client Level is null", false);
         }
+        ///  if the player goes to another dimension, end piloting!
+        if (PilotingClientState.drone != null) {
+            if (PilotingClientState.drone.level() != Minecraft.getInstance().level) {
+                exit("Drone is another dimension", true);
+            }
+        }
+        if (pendingMount != null && PilotingClientState.drone == null) {
+            Entity e = findEntity(pendingMount);               // your existing lookup from tryRegisterFromServer
+            if (e instanceof AbstractDrone d) { enter(d); pendingMount = null; }
+            else if (++pendingTicks > 100) pendingMount = null;
+        }
+        if (PilotingClientState.drone == null) { PilotingClientState.resetZoom(); return; }
+
+        AbstractDrone d = PilotingClientState.drone;
+        if (checkIfPilot(d)) { confirmed = true; unconfirmedTicks = 0; }
+        else if (confirmed || ++unconfirmedTicks > 60 || d.isRemoved()) { exit("drone is removed", true); return; }
         if (PilotingClientState.drone == null) {
             PilotingClientState.resetZoom();          // new
             return;
         }
         PilotingClientState.tickZoom();
         if (Minecraft.getInstance().level == null) {
-            PilotingClientState.drone = null;
+            exit("Client level is null", false);
             return;
         }
         if (PilotingClientState.drone == null) return;
         if (PilotingClientState.drone.getEntityData().get(CONTROLLER_DATA).isEmpty() || PilotingClientState.drone.getRemovalReason() == Entity.RemovalReason.DISCARDED){
-            PilotingClientState.drone = null;
+            exit("The drones synced data doesn't contain the controller anymore", true);
             Minecraft.getInstance().setCameraEntity(Minecraft.getInstance().player);
         }
         if (Minecraft.getInstance().options.keyShift.isDown() && !prevShiftDown) {
@@ -329,6 +355,17 @@ public class ClientDroneManager {
         handlePatrolClick();
         PilotingClientState.movementYRot = PilotingClientState.yRot;
     }
+    public static void onDroneClientTick(AbstractDrone d) {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        if (PilotingClientState.drone == null && checkIfPilot(d)) enter(d);
+    }
+    private static Entity findEntity(UUID pendingMount) {
+        Level lvl = Minecraft.getInstance().level;
+        if (lvl == null) return null;
+        return lvl.getEntity(pendingMount);
+    }
+
     static boolean wasAttackDown = false;
     public static void handlePatrolClick() {
         if (ClientDroneManager.PilotingClientState.drone == null) return;
@@ -426,5 +463,8 @@ public class ClientDroneManager {
             uav.reconcileFromServer(p);
         });
     }
-
+    @SubscribeEvent
+    public static void onClone(ClientPlayerNetworkEvent.Clone e) { exit("player cloned", false); }
+    @SubscribeEvent
+    public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) { exit("logout", false); }
 }

@@ -16,8 +16,11 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,30 +30,40 @@ import java.util.*;
 public class DroneManager {
     private static DroneManager INSTANCE;
     private DroneChunkStreamer chunkStreamer;
-    public static DroneManager getInstance() {
-        return INSTANCE;
+    public DroneManager() {
+        INSTANCE = this;
+
+        this.chunkStreamer = new DroneChunkStreamer();
     }
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event){
-        INSTANCE = new DroneManager();
-        INSTANCE.chunkStreamer = new DroneChunkStreamer();
-    }
-    @SubscribeEvent
-    public static void onPlayersDeath(LivingDeathEvent event){
-        if (event.getEntity() instanceof Player player){
-            if (getInstance().playerToDrone.containsKey(player.getUUID())){
-                Entity ent = player.level().getEntity(getInstance().playerToDrone.get(player.getUUID()));
-                if (ent instanceof AbstractDrone drone){
-                    drone.stopOperating();
-                }
+    private void generateData() {
+        List<PilotSessions.Session> sessions = PilotSessions.getInstance().getSessions();
+        for (PilotSessions.Session s : sessions) {
+            this.playerToVehicle.put(s.player(), s.vehicle());
+            Player pl = NukeModbyBoruebork.server.getPlayerList().getPlayer(s.player());
+            Entity pilotable = pl.level().getEntity(s.vehicle());
+            if (pilotable instanceof AbstractDrone d) {
+                this.pilotedDrones.add(d);
             }
         }
     }
-
-    public Map<UUID, UUID> playerToDrone = new HashMap<>();
-    public Map<AbstractDrone, UUID> drones = new HashMap<>();
+    public static DroneManager getInstance() {
+        if (INSTANCE == null) {
+            new DroneManager();
+        }
+        return INSTANCE;
+    }
+    @SubscribeEvent
+    public static void onPlayersDeath(LivingDeathEvent e) {
+        if (e.getEntity() instanceof ServerPlayer p) {
+            Pilotable v = getInstance().getPiloted(p);
+            if (v instanceof AbstractDrone d) d.stopOperating();
+        }
+    }
+    public Set<AbstractDrone> pilotedDrones = new HashSet<>();
     public static void updateDronePos(DroneInputPayload droneInputPayload, IPayloadContext context) {
-        Entity ent = NukeModbyBoruebork.server.getLevel(Level.OVERWORLD).getEntity(droneInputPayload.droneId());
+        Pilotable pilotable = getInstance().getPiloted((ServerPlayer) context.player());
+        if (pilotable == null) return;
+        Entity ent = pilotable.asEntity();
         if (ent != null)
         {
             if (ent instanceof AbstractFPVDrone drone){
@@ -58,39 +71,50 @@ public class DroneManager {
             }
         }
     }
-    public void addEntry(Player player, AbstractDrone drone){
-        playerToDrone.put(player.getUUID(), drone.getUUID());
-        drones.put(drone, drone.getUUID());
+    public void register(Player player, Pilotable vehicle){
+        playerToVehicle.remove(player.getUUID());
+        playerToVehicle.put(player.getUUID(), vehicle.asEntity().getUUID());
+        if (vehicle instanceof AbstractDrone drone) pilotedDrones.add(drone);
     }
     public static void exitDrone(ExitDronePacket $, IPayloadContext context) {
-        UUID droneId = DroneManager.getInstance().playerToDrone.get(context.player().getUUID());
-        Entity ent = context.player().level().getEntity(droneId);
+        Pilotable ent = DroneManager.getInstance().getPiloted((ServerPlayer) context.player());
         if (ent == null) return;
         if (ent instanceof AbstractDrone drone){
             drone.stopOperating();
-            getInstance().chunkStreamer.onExit((ServerPlayer) context.player());
+            //getInstance().chunkStreamer.onExit((ServerPlayer) context.player());
         }
     }
 
     public static void setWeaponsMode(SetProjectileModePayload payload, IPayloadContext context) {
-        UUID id =  getInstance().playerToDrone.get(context.player().getUUID());
-        Entity ent = context.player().level().getEntity(id);
+        Pilotable ent = DroneManager.getInstance().getPiloted((ServerPlayer) context.player());
         if (ent instanceof AbstractFPVProjectileLaunchingDrone drone){
             drone.setServerMode(payload.mode());
         }
     }
 
     public static void launchDroneProjectile(DroneLaucnhProjectilePayload $, IPayloadContext context) {
-        UUID id =  getInstance().playerToDrone.get(context.player().getUUID());
-        Entity ent = context.player().level().getEntity(id);
+        Pilotable ent = DroneManager.getInstance().getPiloted((ServerPlayer) context.player());
         if (ent instanceof AbstractFPVProjectileLaunchingDrone drone){
             drone.tryFireWeapon();
         }
     }
     @SubscribeEvent
     public static void serverTick(ServerTickEvent.Pre event) {
-        for (AbstractDrone drone : getInstance().drones.keySet()){
-            getInstance().updateChunkTicket(drone);
+        DroneManager dm = getInstance();
+        for (var it = dm.pilotedDrones.iterator(); it.hasNext();) {
+            AbstractDrone d = it.next();
+            UUID pid = d.pilotSeat().pilotId();
+            ServerPlayer p = pid == null ? null : NukeModbyBoruebork.server.getPlayerList().getPlayer(pid);
+
+            boolean invalid = d.isRemoved() || pid == null || p == null
+                    || !p.isAlive() || p.hasDisconnected() || p.level() != d.level();   // dimension change lands here
+            if (invalid) {
+                d.stopOperating();            // -> release() -> notifies client
+                dm.releaseTicket(d);
+                it.remove();
+            } else {
+                dm.updateChunkTicket(d);
+            }
         }
     }
     private final Map<AbstractDrone, ChunkPos> lastTicketPositions = new HashMap<>();
@@ -126,21 +150,9 @@ public class DroneManager {
         }
     }
 
-    public AbstractDrone getPilotedDrone(ServerPlayer player) {
-        return (AbstractDrone) player.level().getEntity(playerToDrone.get(player.getUUID()));
-    }
-
-    /*public static void onFixedWingInputUpdate(FixedWingInputPayload payload, IPayloadContext context) {
-        Entity ent = NukeModbyBoruebork.server.getLevel(Level.OVERWORLD).getEntity(payload.droneId());
-        if (ent == null) return;
-        if (ent instanceof AbstractUAV uav) {
-            uav.updateFixedWingRot(payload);
-        }
-    }*/
-
     public static void onInput(NewFixedWingPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            AbstractDrone d = DroneManager.getInstance().getPilotedDrone((ServerPlayer) context.player());
+            Pilotable d = DroneManager.getInstance().getPiloted((ServerPlayer) context.player());
             if (d instanceof AbstractUAV uav) {
                 // payload must carry an int clientTick
                 uav.setLastInputTick(payload.clientTick());
@@ -157,7 +169,9 @@ public class DroneManager {
     }
 
     public static void onPatrolTargetSet(SetPatrolTargetPayload payload, IPayloadContext context) {
-        if (context.player().level().getEntity(payload.droneId()) instanceof AbstractUAV uav) {
+        Pilotable d = DroneManager.getInstance().getPiloted((ServerPlayer) context.player());
+        if (d == null) return;
+        if (d instanceof AbstractUAV uav) {
             if (payload.kind() == 0) uav.setPatrolBlockTarget(new BlockPos((int) payload.pos().x, (int) payload.pos().y, (int) payload.pos().z));
             else uav.setPatrolEntityTarget(((ServerLevel) context.player().level()).getEntity(payload.entityId()).getUUID());
         }
@@ -169,8 +183,47 @@ public class DroneManager {
         UUID id = playerToVehicle.get(p.getUUID());
         if (id == null) return null;
         Entity e = ((ServerLevel) p.level()).getEntity(id);
+        if (e == null) return null;                          // not found now: keep the entry
         if (e instanceof Pilotable v && v.pilotSeat().isPilot(p)) return v;
-        playerToVehicle.remove(p.getUUID());     // stale entry
+        playerToVehicle.remove(p.getUUID());                 // entity exists but isn't ours
         return null;
+    }
+    public void unregister(UUID playerId) { playerToVehicle.remove(playerId); }
+    @SubscribeEvent
+    public static void onDimChange(PlayerEvent.PlayerChangedDimensionEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        for (AbstractDrone d : List.copyOf(getInstance().pilotedDrones))
+            if (d.pilotSeat().isPilot(p)) d.stopOperating();
+        getInstance().unregister(p.getUUID());
+    }
+    @SubscribeEvent
+    public static void onDimChange(PlayerEvent.PlayerLoggedOutEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        for (AbstractDrone d : List.copyOf(getInstance().pilotedDrones))
+            if (d.pilotSeat().isPilot(p)) d.stopOperating();
+        getInstance().unregister(p.getUUID());
+    }
+    @SubscribeEvent
+    public static void onDimChange(PlayerEvent.PlayerLoggedInEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        for (AbstractDrone d : List.copyOf(getInstance().pilotedDrones))
+            if (d.pilotSeat().isPilot(p)) d.stopOperating();
+        getInstance().unregister(p.getUUID());
+    }
+    public void onSeatReleased(UUID playerId, UUID vehicleId) {
+        // two-arg remove: don't wipe a newer session that was registered for another drone
+        boolean wasCurrent = playerToVehicle.remove(playerId, vehicleId);
+        ServerPlayer p = NukeModbyBoruebork.server.getPlayerList().getPlayer(playerId);
+        if (p == null) return;
+        //if (wasCurrent) chunkStreamer.onExit(p);
+    }
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event){
+        List<PilotSessions.Session> sessions = new ArrayList<>();
+        for (UUID pl : getInstance().playerToVehicle.keySet()) {
+            Player player = event.getServer().getPlayerList().getPlayer(pl);
+            sessions.add(new PilotSessions.Session(pl, getInstance().playerToVehicle.get(pl), player.level().dimension(), getInstance().getPiloted((ServerPlayer) player).asEntity().blockPosition()));
+        }
+        PilotSessions.getInstance().setSessions(sessions);
     }
 }

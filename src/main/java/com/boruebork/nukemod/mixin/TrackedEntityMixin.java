@@ -1,7 +1,8 @@
 package com.boruebork.nukemod.mixin;
 
-import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.DroneManager;
+import com.boruebork.nukemod.drone.Pilotable;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;
@@ -27,10 +28,19 @@ public abstract class TrackedEntityMixin {
     private void drone$forceTrackForPilot(ServerPlayer player, CallbackInfo ci) {
         if (!(this.entity instanceof AbstractDrone drone)) return;
 
-        UUID pilotedDroneId = DroneManager.getInstance().playerToDrone.get(player.getUUID());
-        if (pilotedDroneId == null || !pilotedDroneId.equals(drone.getUUID())) return;
+        Pilotable piloted = DroneManager.getInstance().getPiloted(player);
+        if (piloted == null) return;                     // player isn't piloting anything
 
-        // bypass the range + isChunkTracked gate entirely — force this pairing to exist
+        Entity pilotDrone = piloted.asEntity();
+        if (pilotDrone == null) return;                  // drone entity not spawned yet
+        if (!(pilotDrone instanceof AbstractDrone)) return;
+        AbstractDrone pilotDrone2 = (AbstractDrone) pilotDrone;
+        UUID pilotedDroneId = pilotDrone2.getUUID();
+        if (!pilotedDroneId.equals(drone.getUUID())) return;
+
+        if (player.connection == null) return;
+
+        // bypass range + isChunkTracked gate — force this pairing
         if (this.seenBy.add(player.connection)) {
             this.serverEntity.addPairing(player);
         }

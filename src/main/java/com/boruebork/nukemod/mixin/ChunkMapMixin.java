@@ -2,6 +2,8 @@ package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.PilotHooks;
+import com.boruebork.nukemod.drone.Pilotable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
@@ -22,6 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
+import static com.boruebork.nukemod.drone.DroneManager.getInstance;
+
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin {
 
@@ -34,9 +38,9 @@ public abstract class ChunkMapMixin {
     )
     private SectionPos drone$fakeSectionPosForTracking(EntityAccess entity) {
         if (entity instanceof ServerPlayer player) {
-            AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
-            if (drone != null) {
-                return SectionPos.of(BlockPos.containing(drone.getX(), drone.getY(), drone.getZ()));
+            Pilotable v = getInstance().getPiloted(player);
+            if (v != null) {
+                return SectionPos.of(BlockPos.containing(v.asEntity().getX(), v.asEntity().getY(), v.asEntity().getZ()));
             }
         }
         return SectionPos.of(entity);
@@ -50,9 +54,9 @@ public abstract class ChunkMapMixin {
             )
     )
     private ChunkPos drone$fakeChunkPosForTrackingView(ServerPlayer player) {
-        AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+        Pilotable drone = getInstance().getPiloted(player);
         if (drone != null) {
-            return new ChunkPos(drone.blockPosition());
+            return new ChunkPos(drone.asEntity().blockPosition());
         }
         return player.chunkPosition();
     }
@@ -63,8 +67,8 @@ public abstract class ChunkMapMixin {
     private void droneforce$addDroneChunks(List<LevelChunk> output, CallbackInfo ci) {
         ChunkMap self = (ChunkMap) (Object) this;
 
-        for (AbstractDrone d : DroneManager.getInstance().drones.keySet()) {
-            long packedPos = d.chunkPosition().toLong();
+        for (var it = getInstance().pilotedDrones.iterator(); it.hasNext();) {
+            long packedPos = it.next().chunkPosition().toLong();
             ChunkHolder holder = self.getVisibleChunkIfPresent(packedPos);
             if (holder == null) continue;
 
@@ -89,15 +93,15 @@ public abstract class ChunkMapMixin {
             return;
         }
 
-        AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+        Pilotable drone = getInstance().getPiloted(player);
         if (drone == null) {
             return; // vanilla decides
         }
 
         double cx = chunkPos.getMinBlockX() + 8.0;
         double cz = chunkPos.getMinBlockZ() + 8.0;
-        double dx = cx - drone.getX();
-        double dz = cz - drone.getZ();
+        double dx = cx - drone.asEntity().getX();
+        double dz = cz - drone.asEntity().getZ();
         cir.setReturnValue(dx * dx + dz * dz < 16384.0); // 128^2
     }
     @Shadow
@@ -107,7 +111,7 @@ public abstract class ChunkMapMixin {
     private void droneforce$retrackEntitiesForPilots(CallbackInfo ci) {
         ChunkMap self = (ChunkMap) (Object) this;
         for (ServerPlayer player : level.players()) {
-            AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+            Pilotable drone = DroneManager.getInstance().getPiloted(player);
             if (drone != null) {
                 self.move(player);
             }

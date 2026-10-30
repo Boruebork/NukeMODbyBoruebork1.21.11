@@ -2,6 +2,7 @@ package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.Pilotable;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,9 +21,9 @@ public abstract class TrackedEntityDroneViewMixin {
             require = 1
     )
     private Vec3 droneforce$playerPosAsDrone(ServerPlayer player) {
-        AbstractDrone drone = DroneManager.getInstance().getPilotedDrone(player);
+        Pilotable drone = DroneManager.getInstance().getPiloted(player);
         if (drone != null) {
-            return drone.position();
+            return drone.asEntity().position();
         }
         return player.position();
     }

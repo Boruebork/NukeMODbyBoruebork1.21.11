@@ -603,7 +603,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         }
     }
     protected void onOBBCollision(HitboxPart thisPart, AbstractUAV other, HitboxPart otherPart) {}
-    protected AABB getBroadphaseAABB() {
+    public AABB getBroadphaseAABB() {
         AABB result = null;
         for (HitboxPart part : getHitboxParts()) {
             AABB aabb = getOBBAABB(getWorldOBB(part));
@@ -611,19 +611,19 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         }
         return result == null ? getBoundingBox() : result;
     }
-    protected AABB getOBBAABB(OBB obb) { return obb.toAABB(); }
-    protected boolean thisOBBsIntersect(OBB first, OBB second) { return first.intersects(second); }
+    public AABB getOBBAABB(OBB obb) { return obb.toAABB(); }
+    public boolean thisOBBsIntersect(OBB first, OBB second) { return first.intersects(second); }
     // ---------------------------------------------------------------------
     // OBB machinery
     // ---------------------------------------------------------------------
 
-    List<HitboxPart> getHitboxParts() {
+    public List<HitboxPart> getHitboxParts() {
         return HitboxDefinitions.get(this.getType());
     }
-    protected OBB getWorldOBB(HitboxPart part) {
+    public OBB getWorldOBB(HitboxPart part) {
         return getWorldOBBAt(part, getEntityRotation(), getX(), getY(), getZ());
     }
-    protected OBB getWorldOBBAt(HitboxPart part, Quaternionf entityRot, double ex, double ey, double ez) {
+    public OBB getWorldOBBAt(HitboxPart part, Quaternionf entityRot, double ex, double ey, double ez) {
         Vector3f center = new Vector3f(part.localOffset()).sub(part.localPivot());
         entityRot.transform(center);
         center.add(part.localPivot());
@@ -632,7 +632,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         Quaternionf worldRot = new Quaternionf(entityRot).mul(part.localRotation());
         return new OBB(center, new Vector3f(part.localHalfExtents()), worldRot);
     }
-    protected OBB getWorldOBBAt(HitboxPart part, double entityX, double entityY, double entityZ) {
+    public OBB getWorldOBBAt(HitboxPart part, double entityX, double entityY, double entityZ) {
         return getWorldOBBAt(part, getEntityRotation(), entityX, entityY, entityZ);
     }
     @Override
