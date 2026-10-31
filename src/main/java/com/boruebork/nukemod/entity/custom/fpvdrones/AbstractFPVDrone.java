@@ -1,6 +1,6 @@
 package com.boruebork.nukemod.entity.custom.fpvdrones;
 
-import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -18,10 +18,10 @@ import static net.minecraft.world.entity.player.Player.MAX_HEALTH;
 /**
  * FPV combat drone: explosion-only health, spinning rotor animation, and a
  * strafe/yaw-rate-banking flight model. Piloting and roll are handled by
- * {@link AbstractDrone}; this class only supplies what's specific to this
+ * {@link AbstractPilotedEntity}; this class only supplies what's specific to this
  * particular kind of drone.
  */
-public abstract class AbstractFPVDrone extends AbstractDrone {
+public abstract class AbstractFPVDrone extends AbstractPilotedEntity {
 
     // --- health ---
     public static final EntityDataAccessor<Float> HEALTH_DATA =
@@ -66,7 +66,7 @@ public abstract class AbstractFPVDrone extends AbstractDrone {
 
     @Override
     public void tick() {
-        super.tick(); // AbstractDrone: Entity#tick() + camera piloting + roll sync/auto-level
+        super.tick(); // AbstractPilotedEntity: Entity#tick() + camera piloting + roll sync/auto-level
         // NOTE: this reorders things slightly vs. the original single-class version -- roll
         // sync/auto-level now runs *before* the ticketTimer/tickNum/rotor block below rather
         // than after. Harmless: none of these touch roll, and roll's auto-level doesn't

@@ -1,6 +1,6 @@
 package com.boruebork.nukemod.entity.custom;
 
-import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import com.boruebork.nukemod.entity.custom.fpvdrones.DroneProjectile;
 import com.boruebork.nukemod.ooblib.HasHitboxParts;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -18,12 +18,12 @@ import net.minecraft.world.phys.Vec3;
 
 public class Rocket extends Entity implements DroneProjectile {
     private int ticks = 0;
-    private AbstractDrone parent;
+    private AbstractPilotedEntity parent;
     public Rocket(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
 
-    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractDrone parent) {
+    public void setStartingSpeed(Vec3 speed, float xRot, float yRot, AbstractPilotedEntity parent) {
         this.setDeltaMovement(Vec3.directionFromRotation(xRot, yRot).normalize().scale(3).add(speed));
         this.setXRot(xRot);
         this.setYRot(yRot);

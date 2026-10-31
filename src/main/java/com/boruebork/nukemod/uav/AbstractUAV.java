@@ -2,11 +2,10 @@ package com.boruebork.nukemod.uav;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import com.boruebork.nukemod.network.packet.ReconcilePayload;
 import com.boruebork.nukemod.ooblib.HasHitboxParts;
 import com.boruebork.nukemod.ooblib.HitboxPart;
-import com.boruebork.nukemod.ooblib.OBB;
 import com.boruebork.nukemod.uav.collision.TerrainCollider;
 import com.boruebork.nukemod.uav.flight.FlightModel;
 import com.boruebork.nukemod.uav.flight.FlightParams;
@@ -25,7 +24,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.InterpolationHandler;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -40,9 +38,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.boruebork.nukemod.ooblib.FixedWingUtil.*;
-import static com.boruebork.nukemod.ooblib.OBB.obbDistanceSq;
 
-public abstract class AbstractUAV extends AbstractDrone implements HasHitboxParts {
+public abstract class AbstractUAV extends AbstractPilotedEntity implements HasHitboxParts {
     // --- ground pitch physics ---
     private float groundPitchRate = 0f;   // deg / tick, only used while onGround
 
@@ -259,7 +256,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
 
 // Roll: kinematic both ground and air. Real ground roll is constrained
 // by the landing gear, so the equilibrium is 0 — the auto-level in
-// AbstractDrone.tick() handles that when no pilot is aboard.
+// AbstractPilotedEntity.tick() handles that when no pilot is aboard.
         float rollTarget = Mth.clamp(
                 -yawStick * getRollFactor() + rollStick * getMaxRoll(),
                 -getMaxRoll(),
@@ -452,9 +449,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     // ---------------------------------------------------------------------
     // Collision / movement
     // ---------------------------------------------------------------------
-    protected boolean hasTerrainCollisionAt(double x, double y, double z) {   // kept for resolveInitialPenetration
-        return terrain.collidesAt(getEntityRotation(), x, y, z);
-    }
+
     protected boolean checkGroundCollision() {
         TerrainCollider.Contact c = terrain.findContact(getEntityRotation(), position());
         if (c == null) return false;
@@ -821,7 +816,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
             SynchedEntityData.defineId(AbstractUAV.class, EntityDataSerializers.FLOAT);
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        super.defineSynchedData(builder);   // AbstractDrone's ROLL_DATA and CONTROLLER_DATA
+        super.defineSynchedData(builder);   // AbstractPilotedEntity's ROLL_DATA and CONTROLLER_DATA
         builder.define(HEALTH_DATA, getMaxHealth());
     }
     public float getHealth() { return this.entityData.get(HEALTH_DATA); }

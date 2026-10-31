@@ -1,7 +1,7 @@
 package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.util.SmoothDouble;
@@ -27,7 +27,7 @@ public class MouseHandlerMixin {
     private Minecraft minecraft;
     @Inject(method = "turnPlayer", at = @At("HEAD"), cancellable = true)
     private void redirectToDrone(double movementTime, CallbackInfo ci) {
-        AbstractDrone drone = ClientDroneManager.PilotingClientState.drone;
+        AbstractPilotedEntity drone = ClientDroneManager.PilotingClientState.drone;
         if (drone != null) {
             CalculatePlayerTurnEvent event = ClientHooks.getTurnPlayerValues(
                     (Double) this.minecraft.options.sensitivity().get(), this.minecraft.options.smoothCamera);

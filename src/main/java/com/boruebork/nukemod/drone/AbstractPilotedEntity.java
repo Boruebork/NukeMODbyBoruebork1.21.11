@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
  * entirely might fly very differently while still wanting the same
  * piloting handshake and roll-banking behavior.
  */
-public abstract class AbstractDrone extends Entity implements Pilotable {
+public abstract class AbstractPilotedEntity extends Entity implements Pilotable {
     protected InterpolationHandler interpolation = new InterpolationHandler(this);
     protected PilotSeat pilotSeat;
     @Override
@@ -34,7 +34,7 @@ public abstract class AbstractDrone extends Entity implements Pilotable {
 
     // --- piloting / camera ---
     public static final EntityDataAccessor<String> CONTROLLER_DATA =
-            SynchedEntityData.defineId(AbstractDrone.class, EntityDataSerializers.STRING);
+            SynchedEntityData.defineId(AbstractPilotedEntity.class, EntityDataSerializers.STRING);
 
     @Override
     public Entity asEntity() {
@@ -45,13 +45,13 @@ public abstract class AbstractDrone extends Entity implements Pilotable {
     public float roll = 0f;
     public float rollO = 0f; // for interpolation, like xRotO/yRotO
     public static final EntityDataAccessor<Float> ROLL_DATA =
-            SynchedEntityData.defineId(AbstractDrone.class, EntityDataSerializers.FLOAT);
+            SynchedEntityData.defineId(AbstractPilotedEntity.class, EntityDataSerializers.FLOAT);
 
     public static final float MAX_ROLL_DEGREES = 35f; // full bank angle, clamps any target passed to updateRollTowards
     private static final float ROLL_RESPONSE = 0.15f;  // how fast roll chases its target while actively flown
     private static final float ROLL_RECOVERY = 0.10f;  // how fast roll returns to level when idle/unpiloted
 
-    public AbstractDrone(EntityType<?> entityType, Level level) {
+    public AbstractPilotedEntity(EntityType<?> entityType, Level level) {
         super(entityType, level);
         this.pilotSeat = new PilotSeat(this, CONTROLLER_DATA);
     }

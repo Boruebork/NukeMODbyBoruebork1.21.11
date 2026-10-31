@@ -12,7 +12,7 @@ public class ClientPilotHooks {
     public static void setup(FMLClientSetupEvent e) {
         e.enqueueWork(() -> PilotHooks.client = ClientPilotHooks::tick);
     }
-    static void tick(AbstractDrone d) {
+    static void tick(AbstractPilotedEntity d) {
         var S = ClientDroneManager.PilotingClientState.class; // use the static fields directly
         boolean local = ClientDroneManager.PilotingClientState.drone == d;
         if (!local && d.pilotSeat().isOccupied()

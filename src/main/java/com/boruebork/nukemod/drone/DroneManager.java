@@ -4,11 +4,10 @@ import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.*;
-import com.boruebork.nukemod.ooblib.AbstractUAV;
+import com.boruebork.nukemod.uav.AbstractUAV;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -21,9 +20,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,21 +38,21 @@ public class DroneManager {
         }
         return INSTANCE;
     }
-    private final Map<UUID, AbstractDrone> live = new HashMap<>();   // player -> bound drone (runtime only)
+    private final Map<UUID, AbstractPilotedEntity> live = new HashMap<>();   // player -> bound drone (runtime only)
     private final Map<UUID, Pin> pins = new HashMap<>();
     private final Map<UUID, Integer> waiting = new HashMap<>();
     private record Pin(ResourceKey<Level> dim, ChunkPos chunk) {}
 
-    public Collection<AbstractDrone> pilotedDrones() { return live.values(); }  // mixins: .pilotedDrones().iterator()
+    public Collection<AbstractPilotedEntity> pilotedDrones() { return live.values(); }  // mixins: .pilotedDrones().iterator()
 
     public @Nullable Pilotable getPiloted(ServerPlayer p) {          // O(1), no level lookup
-        AbstractDrone d = live.get(p.getUUID());
+        AbstractPilotedEntity d = live.get(p.getUUID());
         return d != null && !d.isRemoved() && d.pilotSeat().isPilot(p) ? d : null;
     }
 
     /** Called from PilotSeat.tryEnter. */
     public void register(Player player, Pilotable v) {
-        if (!(v instanceof AbstractDrone d) || !(player instanceof ServerPlayer p)) return;
+        if (!(v instanceof AbstractPilotedEntity d) || !(player instanceof ServerPlayer p)) return;
         live.put(p.getUUID(), d);
         PilotSessions.get(NukeModbyBoruebork.server).put(new PilotSessions.Session(
                 p.getUUID(), d.getUUID(), d.level().dimension(), d.blockPosition()));
@@ -105,7 +102,7 @@ public class DroneManager {
             ServerLevel lvl = server.getLevel(s.dim());
             Entity e = lvl == null ? null : lvl.getEntity(s.vehicle());
 
-            if (e instanceof AbstractDrone d && !d.isRemoved()) {
+            if (e instanceof AbstractPilotedEntity d && !d.isRemoved()) {
                 dm.waiting.remove(pid);
                 if (!p.isAlive()) { d.stopOperating(); dm.endSession(pid); continue; }
                 if (dm.live.get(pid) != d) {                           // first sight after login, restart or chunk reload
@@ -126,7 +123,7 @@ public class DroneManager {
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
         DroneManager dm = getInstance();
-        AbstractDrone d = dm.live.remove(p.getUUID());
+        AbstractPilotedEntity d = dm.live.remove(p.getUUID());
         if (d != null) d.pilotSeat().detach();                          // suspend: free the seat, KEEP the session
         dm.waiting.remove(p.getUUID());
         dm.unpin(p.getUUID());
@@ -135,7 +132,7 @@ public class DroneManager {
     @SubscribeEvent
     public static void onDimChange(PlayerEvent.PlayerChangedDimensionEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
-        AbstractDrone d = getInstance().live.get(p.getUUID());
+        AbstractPilotedEntity d = getInstance().live.get(p.getUUID());
         if (d != null) d.stopOperating();
         getInstance().endSession(p.getUUID());
     }
@@ -146,7 +143,7 @@ public class DroneManager {
     public static void onPlayersDeath(LivingDeathEvent e) {
         if (e.getEntity() instanceof ServerPlayer p) {
             Pilotable v = getInstance().getPiloted(p);
-            if (v instanceof AbstractDrone d) d.stopOperating();
+            if (v instanceof AbstractPilotedEntity d) d.stopOperating();
         }
     }
     public static void updateDronePos(DroneInputPayload droneInputPayload, IPayloadContext context) {
@@ -163,7 +160,7 @@ public class DroneManager {
     public static void exitDrone(ExitDronePacket $, IPayloadContext context) {
         Pilotable ent = DroneManager.getInstance().getPiloted((ServerPlayer) context.player());
         if (ent == null) return;
-        if (ent instanceof AbstractDrone drone){
+        if (ent instanceof AbstractPilotedEntity drone){
             drone.stopOperating();
             //getInstance().chunkStreamer.onExit((ServerPlayer) context.player());
         }

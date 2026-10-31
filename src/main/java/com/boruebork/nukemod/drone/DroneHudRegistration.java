@@ -4,7 +4,7 @@ import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
-import com.boruebork.nukemod.ooblib.AbstractUAV;
+import com.boruebork.nukemod.uav.AbstractUAV;
 import com.boruebork.nukemod.util.Colors;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -52,7 +52,7 @@ public class DroneHudRegistration {
         int centerY = height / 2;
         float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
 
-        AbstractDrone drone = ClientDroneManager.PilotingClientState.drone;
+        AbstractPilotedEntity drone = ClientDroneManager.PilotingClientState.drone;
         if (drone instanceof AbstractUAV uav) {
             // Nose-direction marker: where the UAV's BODY is actually pointing, independent of
             // where the camera (mouse look) is currently aimed. Reuses the exact partialTick

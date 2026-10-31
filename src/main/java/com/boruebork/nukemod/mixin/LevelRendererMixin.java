@@ -1,6 +1,6 @@
 package com.boruebork.nukemod.mixin;
 
-import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +18,7 @@ public abstract class LevelRendererMixin {
             )
     )
     private boolean drone$forceRenderWhenPiloting(Camera camera) {
-        if (camera.entity() instanceof AbstractDrone drone) {
+        if (camera.entity() instanceof AbstractPilotedEntity drone) {
             return true; // pretend we're "detached" so the entity != camera.entity() OR passes
         }
         return camera.isDetached();

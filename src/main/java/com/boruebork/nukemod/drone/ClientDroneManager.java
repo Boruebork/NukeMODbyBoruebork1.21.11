@@ -4,7 +4,8 @@ import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.*;
-import com.boruebork.nukemod.ooblib.AbstractUAV;
+import com.boruebork.nukemod.uav.AbstractUAV;
+import com.boruebork.nukemod.uav.flight.Sticks;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.ClientInput;
@@ -34,7 +35,7 @@ public class ClientDroneManager {
     private static int pendingTicks;
     private static boolean confirmed;
     private static int unconfirmedTicks;
-    static void enter(AbstractDrone d) {
+    static void enter(AbstractPilotedEntity d) {
         PilotingClientState.drone = d;
         PilotingClientState.mode = PilotingClientState.PilotingMode.FIXED;
         PilotingClientState.cameraYaw   = PilotingClientState.cameraYawO   = d.getYRot();
@@ -56,7 +57,7 @@ public class ClientDroneManager {
         var mc = Minecraft.getInstance();
         if (mc.player != null) mc.setCameraEntity(mc.player);
     }
-    public static boolean checkIfPilot(AbstractDrone drone) {
+    public static boolean checkIfPilot(AbstractPilotedEntity drone) {
         if (drone.getEntityData().get(CONTROLLER_DATA).isEmpty() || drone.getRemovalReason() == Entity.RemovalReason.DISCARDED) {
             return false;
         }
@@ -99,7 +100,7 @@ public class ClientDroneManager {
                     PilotingClientState.cameraYaw
             ));
         } else if (PilotingClientState.drone instanceof AbstractUAV uav) {
-            AbstractUAV.ClientSticks s = uav.computeClientSticks();
+            Sticks s = uav.computeClientSticks();
             ClientPacketDistributor.sendToServer(new NewFixedWingPayload(
                     uav.getId(),
                     s.throttle(),
@@ -114,7 +115,7 @@ public class ClientDroneManager {
         }
     }
     public static class PilotingClientState{
-        public static AbstractDrone drone;
+        public static AbstractPilotedEntity drone;
         public static float x;
         public static float z;
         public static boolean up;
@@ -295,12 +296,12 @@ public class ClientDroneManager {
         }
         if (pendingMount != null && PilotingClientState.drone == null) {
             Entity e = findEntity(pendingMount);               // your existing lookup from tryRegisterFromServer
-            if (e instanceof AbstractDrone d) { enter(d); pendingMount = null; }
+            if (e instanceof AbstractPilotedEntity d) { enter(d); pendingMount = null; }
             else if (++pendingTicks > 100) pendingMount = null;
         }
         if (PilotingClientState.drone == null) { PilotingClientState.resetZoom(); return; }
 
-        AbstractDrone d = PilotingClientState.drone;
+        AbstractPilotedEntity d = PilotingClientState.drone;
         if (checkIfPilot(d)) { confirmed = true; unconfirmedTicks = 0; }
         else if (confirmed || ++unconfirmedTicks > 60 || d.isRemoved()) { exit("drone is removed", true); return; }
         if (PilotingClientState.drone == null) {
@@ -327,7 +328,7 @@ public class ClientDroneManager {
         handlePatrolClick();
         PilotingClientState.movementYRot = PilotingClientState.yRot;
     }
-    public static void onDroneClientTick(AbstractDrone d) {
+    public static void onDroneClientTick(AbstractPilotedEntity d) {
         var mc = Minecraft.getInstance();
         if (mc.player == null) return;
         if (PilotingClientState.drone == null && checkIfPilot(d)) enter(d);

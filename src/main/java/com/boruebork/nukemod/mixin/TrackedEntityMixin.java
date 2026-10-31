@@ -1,6 +1,6 @@
 package com.boruebork.nukemod.mixin;
 
-import com.boruebork.nukemod.drone.AbstractDrone;
+import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.drone.Pilotable;
 import net.minecraft.server.level.ServerEntity;
@@ -26,15 +26,15 @@ public abstract class TrackedEntityMixin {
 
     @Inject(method = "updatePlayer", at = @At("HEAD"), cancellable = true)
     private void drone$forceTrackForPilot(ServerPlayer player, CallbackInfo ci) {
-        if (!(this.entity instanceof AbstractDrone drone)) return;
+        if (!(this.entity instanceof AbstractPilotedEntity drone)) return;
 
         Pilotable piloted = DroneManager.getInstance().getPiloted(player);
         if (piloted == null) return;                     // player isn't piloting anything
 
         Entity pilotDrone = piloted.asEntity();
         if (pilotDrone == null) return;                  // drone entity not spawned yet
-        if (!(pilotDrone instanceof AbstractDrone)) return;
-        AbstractDrone pilotDrone2 = (AbstractDrone) pilotDrone;
+        if (!(pilotDrone instanceof AbstractPilotedEntity)) return;
+        AbstractPilotedEntity pilotDrone2 = (AbstractPilotedEntity) pilotDrone;
         UUID pilotedDroneId = pilotDrone2.getUUID();
         if (!pilotedDroneId.equals(drone.getUUID())) return;
 

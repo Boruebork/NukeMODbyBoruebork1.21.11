@@ -1,5 +1,6 @@
 package com.boruebork.nukemod.ooblib;
 
+import com.boruebork.nukemod.aircraft.AbstractFixedWingAircraft;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 

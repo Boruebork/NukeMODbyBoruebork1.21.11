@@ -1,7 +1,6 @@
 package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.DroneManager;
-import com.boruebork.nukemod.drone.AbstractDrone;
 import com.boruebork.nukemod.drone.Pilotable;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;

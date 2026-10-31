@@ -1,7 +1,7 @@
 package com.boruebork.nukemod.mixin;
 
 import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.ooblib.AbstractUAV;
+import com.boruebork.nukemod.uav.AbstractUAV;
 import net.minecraft.client.Camera;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;

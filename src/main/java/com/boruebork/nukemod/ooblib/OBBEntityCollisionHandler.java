@@ -57,7 +57,7 @@ public class OBBEntityCollisionHandler implements HasHitboxParts{
         return hit ? origin.add(dir.scale(bestT)) : null;
     }
 
-    protected Vec3 moveWithOBBTerrainCollision(Vec3 desired) {
+    public Vec3 moveWithOBBTerrainCollision(Vec3 desired) {
         double x = getSelf().getX(), y = getSelf().getY(), z = getSelf().getZ();
 
         if (hasTerrainCollisionAt(x, y, z)) {

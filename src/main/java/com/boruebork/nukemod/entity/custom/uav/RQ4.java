@@ -2,7 +2,6 @@ package com.boruebork.nukemod.entity.custom.uav;
 
 import com.boruebork.nukemod.entity.ModEntities;
 import com.boruebork.nukemod.entity.custom.client.uav.AbstractWeaponEquipedUAV;
-import com.boruebork.nukemod.ooblib.AbstractUAV;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;

@@ -1,13 +1,6 @@
 package com.boruebork.nukemod.ooblib;
 
-import com.boruebork.nukemod.drone.ClientDroneManager;
-import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
-import com.boruebork.nukemod.network.packet.DroneInputPayload;
-import com.boruebork.nukemod.network.packet.NewFixedWingPayload;
-import net.minecraft.client.Minecraft;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import com.boruebork.nukemod.aircraft.AbstractFixedWingAircraft;
 
 public class FixedWingClientManager {
 
