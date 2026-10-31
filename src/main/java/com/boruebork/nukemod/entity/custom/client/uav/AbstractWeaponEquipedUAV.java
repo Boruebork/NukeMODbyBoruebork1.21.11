@@ -3,7 +3,7 @@ package com.boruebork.nukemod.entity.custom.client.uav;
 import com.boruebork.nukemod.entity.NukeMODEntityDataSerializers;
 import com.boruebork.nukemod.entity.custom.fpvdrones.DroneProjectile;
 import com.boruebork.nukemod.network.packet.SetProjectileModePayload;
-import com.boruebork.nukemod.ooblib.AbstractUAV;
+import com.boruebork.nukemod.uav.AbstractUAV;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;

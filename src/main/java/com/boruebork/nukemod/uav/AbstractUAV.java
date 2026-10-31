@@ -5,10 +5,13 @@ import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.drone.AbstractDrone;
 import com.boruebork.nukemod.network.packet.ReconcilePayload;
 import com.boruebork.nukemod.ooblib.HasHitboxParts;
-import com.boruebork.nukemod.ooblib.HitboxDefinitions;
 import com.boruebork.nukemod.ooblib.HitboxPart;
 import com.boruebork.nukemod.ooblib.OBB;
 import com.boruebork.nukemod.uav.collision.TerrainCollider;
+import com.boruebork.nukemod.uav.flight.FlightModel;
+import com.boruebork.nukemod.uav.flight.FlightParams;
+import com.boruebork.nukemod.uav.flight.FlightState;
+import com.boruebork.nukemod.uav.flight.Sticks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -28,7 +31,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.*;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.jspecify.annotations.NonNull;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.boruebork.nukemod.ooblib.FixedWingUtil.*;
+import static com.boruebork.nukemod.ooblib.OBB.obbDistanceSq;
 
 public abstract class AbstractUAV extends AbstractDrone implements HasHitboxParts {
     // --- ground pitch physics ---
@@ -54,7 +57,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
 
     /** Airspeed (blocks/tick) at which elevator reaches full authority. */
     private static final float ELEVATOR_FULL_AUTHORITY_SPEED = 0.5f;
-    private static final double COLLISION_SKIN = 1.0E-3;
     private static final boolean DEBUG = false;
     private static final int DEBUG_FULL_TICKS = 200;
     private static final int DEBUG_THROTTLE = 20;
@@ -159,55 +161,81 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
                     + " roll=" + roll + " → inForward=" + inForward);
         }
     }
+    private FlightParams params;
+    protected FlightParams flightParams() {
+        if (params == null) params = new FlightParams(getMass(), getMaxThrust(), getWingArea(),
+                getThrottleRate(), getMaxPitchRatePerTick(), getYawRatePerTick(), getMaxRoll(),
+                getRollFactor(), getRollStep(), getMaxSpeed());
+        return params;
+    }   // if any getter depends on mutable state (payload mass, say), don't cache
+
+    private FlightState captureState() {
+        return new FlightState(position(), getDeltaMovement(), getYRot(), getXRot(), roll,
+                throttle, groundPitchRate, onGround());
+    }
+
+    /** Overwrite everything from a state (server snap, reconcile). */
+    private void applyState(FlightState s) {
+        setYRot(s.yaw()); setXRot(s.pitch());
+        this.roll = this.rollO = s.roll();
+        this.throttle = s.throttle();
+        this.groundPitchRate = s.groundPitchRate();
+        setPos(s.pos().x, s.pos().y, s.pos().z);
+        setDeltaMovement(s.vel());
+        setOnGround(s.onGround());
+        if (!level().isClientSide()) entityData.set(ROLL_DATA, roll);
+    }
+
+    private void stepWith(Sticks in) {
+        FlightState before = captureState();
+        FlightModel.Result r = FlightModel.step(before, in, flightParams(), terrain::move);
+        FlightState s = r.state();
+
+        xRotO = getXRot(); yRotO = getYRot(); rollO = roll;       // interpolation anchors
+        setYRot(s.yaw()); setXRot(s.pitch()); this.roll = s.roll(); // rotation first: setPos rebuilds the bounding box from it
+        this.throttle = s.throttle();
+        this.groundPitchRate = s.groundPitchRate();
+        if (r.flagsValid()) {
+            verticalCollision = r.vertical();
+            horizontalCollision = r.horizontal();
+            setOnGround(s.onGround());
+        }
+        if (!s.pos().equals(before.pos())) setPos(s.pos().x, s.pos().y, s.pos().z);
+        setDeltaMovement(s.vel());
+        if (!level().isClientSide()) entityData.set(ROLL_DATA, roll);   // the old code set this on the client too
+    }
+
+    @Override
+    protected void applyMovement(float fwd, float roll, boolean up, boolean down, float yaw, float pitch) {
+        boolean pilot = level().isClientSide() && ClientDroneManager.PilotingClientState.drone == this;
+        if (level().isClientSide() && !pilot) return;
+        stepWith(new Sticks(fwd, pitch, roll, yaw));
+    }
 
     // ---------------------------------------------------------------------
     // Main physics — server only
     // ---------------------------------------------------------------------
     protected abstract float getMaxSpeed();
-    @Override
+    /*@Override
     protected void applyMovement(float forwardStick, float rollStick, boolean up, boolean down, float yawStick, float pitchStick) {
-        //if (level().isClientSide()) return;
-        boolean isPilot = level().isClientSide()
-                && ClientDroneManager.PilotingClientState.drone == this;
-        if (level().isClientSide() && !isPilot) return;
-
-        /*if (DEBUG && !debugFirstTick) {
-            debugFirstTick = true;
-            log("=== applyMovement first call. Class=" + getClass().getSimpleName());
-            log("  UUID=" + getUUID() + " hash=" + System.identityHashCode(this));
-            log("  args: fwd=" + forwardStick + " pitch=" + pitchStick
-                    + " yaw=" + yawStick + " roll=" + rollStick);
-            log("  mass=" + getMass() + " maxThrust=" + getMaxThrust()
-                    + " wingArea=" + getWingArea() + " throttleRate=" + getThrottleRate());
-            log("  gravity=" + GRAVITY + " airDensity=" + AIR_DENSITY
-                    + " dragBase=" + DRAG_BASE + " dragInduced=" + DRAG_INDUCED
-                    + " liftSlope=" + LIFT_SLOPE + " stallAngle=" + STALL_ANGLE);
-            log("  startPos=" + fmt(position()) + " startVel=" + fmt(getDeltaMovement()));
-        }*/
-
+        boolean pilot = level().isClientSide() && ClientDroneManager.PilotingClientState.drone == this;
+        if (level().isClientSide() && !pilot) return;
+        stepWith(new Sticks(fwd, pitch, roll, yaw));
         debugTick++;
-
         // 1. Throttle integrator
         this.throttle = Mth.clamp(this.throttle + forwardStick * getThrottleRate(), 0f, 1f);
-
         // 2. Rotation from sticks, gated by control authority only
         // 2. Rotation
         float gate = controlAuthority();
-
         this.xRotO = getXRot();
         this.yRotO = getYRot();
         this.rollO  = this.roll;
         Vec3 vel = getDeltaMovement();
         double speed = vel.length();
         if (onGround()) {
-            // ---- ground: torque model around the wheel contact point ----
-            //
-            // Elevator: angular acceleration from the elevator, scaled by airspeed.
-            // Zero airspeed → zero effect, regardless of stick.
             float elevatorAuth = Mth.clamp(
                     (float) (speed / ELEVATOR_FULL_AUTHORITY_SPEED), 0f, 1f);
             float alphaElevator = pitchStick * ELEVATOR_PITCH_ACCEL * elevatorAuth;
-
             // Gravity restoring torque: alpha = -g·sin(θ) / h_com
             // GRAVITY is in blocks/tick², h_com in blocks, result in rad/tick² → deg/tick².
             double alphaGravRad = -GRAVITY * Math.sin(Math.toRadians(getXRot())) / COM_HEIGHT;
@@ -386,7 +414,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
                     + " afterPos=" + fmt(position())
                     + " onGround=" + onGround());
         }
-    }
+    }*/
 
     // ---------------------------------------------------------------------
     // Tick
@@ -424,36 +452,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     // ---------------------------------------------------------------------
     // Collision / movement
     // ---------------------------------------------------------------------
-
-    protected Vec3 moveWithOBBTerrainCollision(Vec3 desired) {
-        Vec3 before = position();
-        TerrainCollider.Result r = terrain.move(before, desired, getEntityRotation());
-        if (r.flagsValid()) {
-            this.verticalCollision = r.vertical();
-            this.horizontalCollision = r.horizontal();
-            this.setOnGround(r.onGround());
-        }
-        if (r.newPos() != before) setPos(r.newPos().x, r.newPos().y, r.newPos().z);
-        return r.newPos().subtract(before);
-    }
-    private double clipAxis(double x, double y, double z, double dx, double dy, double dz) {
-        double full = dx + dy + dz;
-        if (Math.abs(full) < 1.0E-9) return 0;
-        if (!hasTerrainCollisionAt(x + dx, y + dy, z + dz)) return full;
-
-        double low = 0, high = 1;
-        for (int i = 0; i < 10; i++) {
-            double mid = (low + high) * 0.5;
-            if (hasTerrainCollisionAt(x + dx * mid, y + dy * mid, z + dz * mid)) {
-                high = mid;
-            } else {
-                low = mid;
-            }
-        }
-
-        double safe = full * low;
-        return Math.abs(safe) <= COLLISION_SKIN ? 0 : safe - Math.signum(safe) * COLLISION_SKIN;
-    }
     protected boolean hasTerrainCollisionAt(double x, double y, double z) {   // kept for resolveInitialPenetration
         return terrain.collidesAt(getEntityRotation(), x, y, z);
     }
@@ -487,38 +485,9 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         }
     }
     protected void onOBBCollision(HitboxPart thisPart, AbstractUAV other, HitboxPart otherPart) {}
-    public AABB getBroadphaseAABB() {
-        AABB result = null;
-        for (HitboxPart part : getHitboxParts()) {
-            AABB aabb = getOBBAABB(getWorldOBB(part));
-            result = result == null ? aabb : result.minmax(aabb);
-        }
-        return result == null ? getBoundingBox() : result;
-    }
-    public AABB getOBBAABB(OBB obb) { return obb.toAABB(); }
-    public boolean thisOBBsIntersect(OBB first, OBB second) { return first.intersects(second); }
     // ---------------------------------------------------------------------
     // OBB machinery
     // ---------------------------------------------------------------------
-
-    public List<HitboxPart> getHitboxParts() {
-        return HitboxDefinitions.get(this.getType());
-    }
-    public OBB getWorldOBB(HitboxPart part) {
-        return getWorldOBBAt(part, getEntityRotation(), getX(), getY(), getZ());
-    }
-    public OBB getWorldOBBAt(HitboxPart part, Quaternionf entityRot, double ex, double ey, double ez) {
-        Vector3f center = new Vector3f(part.localOffset()).sub(part.localPivot());
-        entityRot.transform(center);
-        center.add(part.localPivot());
-        center.add((float) ex, (float) ey, (float) ez);
-
-        Quaternionf worldRot = new Quaternionf(entityRot).mul(part.localRotation());
-        return new OBB(center, new Vector3f(part.localHalfExtents()), worldRot);
-    }
-    public OBB getWorldOBBAt(HitboxPart part, double entityX, double entityY, double entityZ) {
-        return getWorldOBBAt(part, getEntityRotation(), entityX, entityY, entityZ);
-    }
     @Override
     public Quaternionf getEntityRotation() {
         return new Quaternionf()
@@ -532,51 +501,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
                 .rotateX((float) Math.toRadians(this.getXRot(partialTick)))
                 .rotateZ((float) Math.toRadians(this.getRenderRoll(partialTick)));
     }
-    public Vec3 raycastOBBs(Vec3 origin, Vec3 dir, double maxDist) {
-        Quaternionf entityRot = getEntityRotation();
-        double ex = getX(), ey = getY(), ez = getZ();
-        double bestT = maxDist;
-        boolean hit = false;
 
-        for (HitboxPart part : getHitboxParts()) {
-            OBB obb = getWorldOBBAt(part, entityRot, ex, ey, ez);
-            double t = rayVsOBB(origin, dir, obb, bestT);
-            if (t >= 0 && t < bestT) {
-                bestT = t;
-                hit = true;
-            }
-        }
-        return hit ? origin.add(dir.scale(bestT)) : null;
-    }
-    private static double rayVsOBB(Vec3 origin, Vec3 dir, OBB obb, double maxT) {
-        Quaternionf inv = new Quaternionf(obb.rotation).conjugate();
-        Vector3f o = new Vector3f(
-                (float)(origin.x - obb.center.x),
-                (float)(origin.y - obb.center.y),
-                (float)(origin.z - obb.center.z));
-        inv.transform(o);
-        Vector3f d = new Vector3f((float)dir.x, (float)dir.y, (float)dir.z);
-        inv.transform(d);
-        Vector3f h = obb.halfExtents;
-        double tmin = 0.0, tmax = maxT;
-
-        for (int i = 0; i < 3; i++) {
-            float oi = i == 0 ? o.x : i == 1 ? o.y : o.z;
-            float di = i == 0 ? d.x : i == 1 ? d.y : d.z;
-            float hi = i == 0 ? h.x : i == 1 ? h.y : h.z;
-            if (Math.abs(di) < 1e-8f) {
-                if (Math.abs(oi) > hi) return -1;
-                continue;
-            }
-            double t1 = (-hi - oi) / di;
-            double t2 = ( hi - oi) / di;
-            if (t1 > t2) { double tmp = t1; t1 = t2; t2 = tmp; }
-            tmin = Math.max(tmin, t1);
-            tmax = Math.min(tmax, t2);
-            if (tmin > tmax) return -1;
-        }
-        return tmin;
-    }
     // ---------------------------------------------------------------------
     // Bounding box / rendering helpers
     // ---------------------------------------------------------------------
@@ -584,14 +509,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     @Override
     protected @NonNull AABB makeBoundingBox(Vec3 pos) {
         return computeOBBEnclosingAABB();
-    }
-    public AABB computeOBBEnclosingAABB() {
-        AABB result = null;
-        for (HitboxPart part : getHitboxParts()) {
-            AABB box = getWorldOBB(part).toAABB();
-            result = result == null ? box : result.minmax(box);
-        }
-        return result == null ? super.makeBoundingBox() : result;
     }
     //=========================RENDERING BULLSHIT==================
     public Vec3 getRenderPosition(float partialTick) {
@@ -679,10 +596,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         super.onAddedToLevel();
         resolveInitialPenetration();
     }
-    private static boolean isFinite(Vec3 v) {
-        return Double.isFinite(v.x) && Double.isFinite(v.y) && Double.isFinite(v.z);
-    }
-
     // ---------------------------------------------------------------------
     // Patrol mode
     // ---------------------------------------------------------------------
@@ -785,7 +698,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     }
     //=====================NETWORKING=======================
     /** Transformed sticks for the current mode. Used both for the packet and for local prediction. */
-    public ClientSticks computeClientSticks() {
+    public Sticks computeClientSticks() {
         float stickPitch = 0f, stickYaw = 0f, stickRoll = 0f, throttle = 0f;
         var st = ClientDroneManager.PilotingClientState.class;
 
@@ -801,85 +714,62 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
             stickRoll  = Mth.clamp(ClientDroneManager.PilotingClientState.x, -1f, 1f);
             throttle   = ClientDroneManager.PilotingClientState.z;
         }
-        return new ClientSticks(throttle, stickPitch, stickRoll, stickYaw);
+        return new Sticks(throttle, stickPitch, stickRoll, stickYaw);
     }
     public record ClientSticks(float throttle, float pitch, float roll, float yaw) {}
+    private record InputTick(Sticks sticks, int mode) {}
+    private record StateTick(int tick, FlightState state, InputTick input) {}   // state AFTER the step
+
     @Override
     protected void onClientPrediction() {
-        AbstractUAV.ClientSticks s = computeClientSticks();
-        applyMovement(s.throttle(), s.roll(), false, false, s.yaw(), s.pitch());
-        ClientDroneManager.PilotingClientState.roll  = this.roll;
-        ClientDroneManager.PilotingClientState.rollO = this.rollO;
-        if (ClientDroneManager.PilotingClientState.PilotingMode.FIXED != ClientDroneManager.PilotingClientState.mode) {
-            history.clear();
-        }
-        history.addLast(new StateTick(
-                this.tickCount, position(), getDeltaMovement(),
-                getYRot(), getXRot(), this.roll,
-                new InputTick(s.throttle(), s.roll(), s.yaw(), s.pitch(),
-                        ClientDroneManager.PilotingClientState.mode.ordinal())));
+        Sticks s = computeClientSticks();                        // change its return type to Sticks, delete ClientSticks
+        stepWith(s);
+        ClientDroneManager.PilotingClientState.roll = roll;
+        ClientDroneManager.PilotingClientState.rollO = rollO;
+        if (ClientDroneManager.PilotingClientState.mode != ClientDroneManager.PilotingClientState.PilotingMode.FIXED) history.clear();
+        history.addLast(new StateTick(tickCount, captureState(),
+                new InputTick(s, ClientDroneManager.PilotingClientState.mode.ordinal())));
         while (history.size() > HISTORY_SIZE) history.removeFirst();
+    }
+
+    public void reconcileFromServer(ReconcilePayload p) {
+        FlightState auth = new FlightState(new Vec3(p.motion().x(), p.motion().y(), p.motion().z()), new Vec3(p.motion().dx(), p.motion().dy(), p.motion().dz()),
+                p.attitude().yRot(), p.attitude().xRot(), p.attitude().roll(), p.throttle(), p.groundPitchRate(), p.onGround());
+
+        StateTick match = null;
+        for (StateTick h : history) if (h.tick() == p.inputTick()) { match = h; break; }
+        if (match == null) { applyState(auth); return; }
+
+        double err = match.state().pos().distanceTo(auth.pos());
+        int behind = tickCount - p.inputTick();
+        if (err < RECONCILE_THRESHOLD || behind > MAX_REPLAY_TICKS) {
+            if (behind <= MAX_REPLAY_TICKS) setDeltaMovement(auth.vel()); else applyState(auth);
+            return;
+        }
+
+        FlightState s = auth;
+        for (StateTick h : history) {
+            if (h.tick() <= p.inputTick()) continue;
+            if (h.input().mode() != PilotMode.FIXED.ordinal()) continue;
+            s = FlightModel.step(s, h.input().sticks(), flightParams(), terrain::move).state();
+        }
+        applyState(s);               // one setPos at the end instead of one per replayed tick
+        history.clear();
     }
     private int lastInputTick = -1;
     public void setLastInputTick(int t) { this.lastInputTick = t; }
     public int getLastInputTick()      { return this.lastInputTick; }
-    private record InputTick(float forward, float roll, float yaw, float pitch, int mode) {}
-    private record StateTick(int tick, Vec3 pos, Vec3 vel, float yRot, float xRot, float roll, InputTick input) {}
     private final ArrayDeque<StateTick> history = new ArrayDeque<>();
     private static final int    HISTORY_SIZE      = 40;
     private static final double RECONCILE_THRESHOLD = 0.15;   // blocks
     private static final int    MAX_REPLAY_TICKS  = 8;
-    public void reconcileFromServer(ReconcilePayload p) {
-        // Find the history entry the server is acknowledging.
-        StateTick match = null;
-        for (StateTick h : history) {
-            if (h.tick == p.inputTick()) { match = h; break; }
-        }
-        if (match == null) {
-            // No local history for that tick — either it's stale or we weren't predicting.
-            // Snap and move on. History will be repopulated next prediction tick.
-            hardSet(p);
-            return;
-        }
-
-        Vec3 serverPos = new Vec3(p.x(), p.y(), p.z());
-        double err = match.pos.distanceTo(serverPos);
-        int behind = this.tickCount - p.inputTick();
-
-        if (err < RECONCILE_THRESHOLD || behind > MAX_REPLAY_TICKS) {
-            // Prediction was accurate, or the correction is too old to replay against.
-            // Snap position lightly to prevent slow drift, but keep the visual state.
-            // A no-op when err is tiny.
-            if (behind <= MAX_REPLAY_TICKS) {
-                setDeltaMovement(p.dx(), p.dy(), p.dz());
-            } else {
-                hardSet(p);
-            }
-            return;
-        }
-
-        // Genuine divergence within the replay window: snap to authoritative state,
-        // then replay our un-acknowledged inputs on top.
-        hardSet(p);
-
-        for (StateTick h : history) {
-            if (h.tick <= p.inputTick()) continue;
-            // Skip PATROL ticks — the server doesn't run our input there.
-            if (h.input.mode() != PilotMode.FIXED.ordinal()) continue;
-            applyMovement(h.input.forward(), h.input.roll(),
-                    false, false, h.input.yaw(), h.input.pitch());
-        }
-
-        // History is now inconsistent with the replayed state; drop it.
-        history.clear();
-    }
     private void hardSet(ReconcilePayload p) {
-        setPos(p.x(), p.y(), p.z());
-        setDeltaMovement(p.dx(), p.dy(), p.dz());
-        setYRot(p.yRot());
-        setXRot(p.xRot());
-        this.roll = p.roll();
-        this.rollO = p.roll();
+        setPos(p.motion().x(), p.motion().y(), p.motion().z());
+        setDeltaMovement(p.motion().dx(), p.motion().dy(), p.motion().dz());
+        setYRot(p.attitude().yRot());
+        setXRot(p.attitude().xRot());
+        this.roll = p.attitude().roll();
+        this.rollO = p.attitude().roll();
         if (!level().isClientSide()) this.entityData.set(ROLL_DATA, this.roll);
     }
     //===================SERIALIZTION=================================
@@ -959,7 +849,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
         }
         return true;
     }
-
     private float scaleDamage(DamageSource source, float amount) {
         if (source.is(DamageTypeTags.IS_EXPLOSION)) return amount;
         if (source.is(DamageTypeTags.IS_PROJECTILE)) return amount * 0.25f;
@@ -985,60 +874,5 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
 
         this.stopOperating();   // clears controller, drops camera on the pilot's client
         this.discard();
-    }
-    /**
-     * Reject damage whose source passed through the AABB but not through any OBB.
-     * Vanilla has already done the AABB check; we refine it.
-     */
-    private boolean damageActuallyHitsHitbox(DamageSource source) {
-        // 1. Projectiles: raycast the projectile's path against the drone's OBBs.
-        if (source.getDirectEntity() instanceof Projectile proj) {
-            Vec3 p1 = proj.position();
-            Vec3 p0 = p1.subtract(proj.getDeltaMovement());   // previous tick position
-            Vec3 delta = p1.subtract(p0);
-            double len = delta.length();
-            if (len < 1e-6) {
-                // Stationary projectile sitting in the drone — treat as contact.
-                return sourceCloseEnoughToHitbox(p1);
-            }
-            Vec3 dir = delta.scale(1.0 / len);
-            // Extend the ray a bit so hits on the far side count.
-            return raycastOBBs(p0, dir, len + 0.5) != null;
-        }
-
-        // 2. Explosions and melee: proximity from the source position.
-        Vec3 srcPos = source.getSourcePosition();
-        if (srcPos == null && source.getEntity() != null) {
-            srcPos = source.getEntity().getEyePosition();
-        }
-        if (srcPos == null) return true;   // can't verify → allow
-
-        return sourceCloseEnoughToHitbox(srcPos);
-    }
-
-    private boolean sourceCloseEnoughToHitbox(Vec3 p) {
-        final double MAX_DIST = 1.2;
-        double bestSq = Double.MAX_VALUE;
-
-        for (HitboxPart part : getHitboxParts()) {
-            OBB obb = getWorldOBB(part);
-            double d2 = obbDistanceSq(obb, p);
-            if (d2 < bestSq) bestSq = d2;
-        }
-        return bestSq <= MAX_DIST * MAX_DIST;
-    }
-
-    /** Squared distance from a world-space point to the nearest point on an OBB. */
-    private static double obbDistanceSq(OBB obb, Vec3 p) {
-        Vector3f local = new Vector3f(
-                (float)(p.x - obb.center.x),
-                (float)(p.y - obb.center.y),
-                (float)(p.z - obb.center.z));
-        new Quaternionf(obb.rotation).conjugate().transform(local);
-
-        float dx = Math.max(0f, Math.abs(local.x) - obb.halfExtents.x);
-        float dy = Math.max(0f, Math.abs(local.y) - obb.halfExtents.y);
-        float dz = Math.max(0f, Math.abs(local.z) - obb.halfExtents.z);
-        return dx * dx + dy * dy + dz * dz;
     }
 }

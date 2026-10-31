@@ -698,7 +698,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
     // ---------------------------------------------------------------------
 
     @Override
-    protected @NonNull AABB makeBoundingBox(Vec3 pos) {
+    public @NonNull AABB makeBoundingBox(Vec3 pos) {
         return computeOBBEnclosingAABB();
     }
     public AABB computeOBBEnclosingAABB() {
@@ -1106,7 +1106,7 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
      * Reject damage whose source passed through the AABB but not through any OBB.
      * Vanilla has already done the AABB check; we refine it.
      */
-    private boolean damageActuallyHitsHitbox(DamageSource source) {
+    public boolean damageActuallyHitsHitbox(DamageSource source) {
         // 1. Projectiles: raycast the projectile's path against the drone's OBBs.
         if (source.getDirectEntity() instanceof Projectile proj) {
             Vec3 p1 = proj.position();
@@ -1131,19 +1131,6 @@ public abstract class AbstractUAV extends AbstractDrone implements HasHitboxPart
 
         return sourceCloseEnoughToHitbox(srcPos);
     }
-
-    private boolean sourceCloseEnoughToHitbox(Vec3 p) {
-        final double MAX_DIST = 1.2;
-        double bestSq = Double.MAX_VALUE;
-
-        for (HitboxPart part : getHitboxParts()) {
-            OBB obb = getWorldOBB(part);
-            double d2 = obbDistanceSq(obb, p);
-            if (d2 < bestSq) bestSq = d2;
-        }
-        return bestSq <= MAX_DIST * MAX_DIST;
-    }
-
     /** Squared distance from a world-space point to the nearest point on an OBB. */
     private static double obbDistanceSq(OBB obb, Vec3 p) {
         Vector3f local = new Vector3f(
