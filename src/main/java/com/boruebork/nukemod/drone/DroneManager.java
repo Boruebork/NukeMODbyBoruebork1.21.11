@@ -1,9 +1,11 @@
 package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
+import com.boruebork.nukemod.aircraft.AbstractFixedWingAircraft;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.*;
+import com.boruebork.nukemod.network.packet.patrol.ChangePilotMode;
 import com.boruebork.nukemod.uav.AbstractUAV;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -41,6 +43,11 @@ public class DroneManager {
     private final Map<UUID, AbstractPilotedEntity> live = new HashMap<>();   // player -> bound drone (runtime only)
     private final Map<UUID, Pin> pins = new HashMap<>();
     private final Map<UUID, Integer> waiting = new HashMap<>();
+
+    public static void changePilotMode(ChangePilotMode payload, IPayloadContext context) {
+
+    }
+
     private record Pin(ResourceKey<Level> dim, ChunkPos chunk) {}
 
     public Collection<AbstractPilotedEntity> pilotedDrones() { return live.values(); }  // mixins: .pilotedDrones().iterator()
@@ -179,20 +186,12 @@ public class DroneManager {
             drone.tryFireWeapon();
         }
     }
-    public static void onInput(NewFixedWingPayload payload, IPayloadContext context) {
+    public static void onInput(FixedWIngInputPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            Pilotable d = DroneManager.getInstance().getPiloted((ServerPlayer) context.player());
-            if (d instanceof AbstractUAV uav) {
+            Entity d = context.player().level().getEntity(payload.aircraftId());
+            if (d instanceof AbstractFixedWingAircraft craft) {
                 // payload must carry an int clientTick
-                uav.setLastInputTick(payload.clientTick());
-                uav.onInput(
-                        payload.forward(),
-                        payload.pitch(),
-                        payload.roll(),
-                        payload.yaw(),
-                        payload.throttle(),
-                        payload.mode()
-                );
+                craft.onInput(payload.sticks(), payload.clientTick());
             }
         });
     }

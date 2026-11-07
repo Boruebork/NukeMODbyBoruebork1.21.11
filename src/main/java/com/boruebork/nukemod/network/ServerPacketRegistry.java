@@ -1,9 +1,9 @@
 package com.boruebork.nukemod.network;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
-import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.drone.DroneManager;
 import com.boruebork.nukemod.network.packet.*;
+import com.boruebork.nukemod.network.packet.patrol.ChangePilotMode;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -62,8 +62,8 @@ public class ServerPacketRegistry {
                 DroneManager::launchDroneProjectile
         );
         registrar.playToServer(
-                NewFixedWingPayload.TYPE,
-                NewFixedWingPayload.STREAM_CODEC,
+                FixedWIngInputPayload.TYPE,
+                FixedWIngInputPayload.STREAM_CODEC,
                 DroneManager::onInput
         );
         registrar.playToServer(
@@ -74,6 +74,11 @@ public class ServerPacketRegistry {
         registrar.playToClient(
                 ReconcilePayload.TYPE,
                 ReconcilePayload.STREAM_CODEC
+        );
+        registrar.playToServer(
+                ChangePilotMode.TYPE,
+                ChangePilotMode.STREAM_CODEC,
+                DroneManager::changePilotMode
         );
     }
 }

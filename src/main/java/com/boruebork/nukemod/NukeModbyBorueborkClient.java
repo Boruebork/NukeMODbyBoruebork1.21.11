@@ -3,6 +3,7 @@ package com.boruebork.nukemod;
 import com.boruebork.nukemod.block.entity.ModBE;
 import com.boruebork.nukemod.block.entity.renderer.GuidedMissileLauncherBER;
 import com.boruebork.nukemod.entity.ModEntities;
+import com.boruebork.nukemod.entity.custom.client.uav.BayraktarRenderer;
 import com.boruebork.nukemod.entity.custom.client.uav.RQ4Renderer;
 import com.boruebork.nukemod.entity.custom.client.fpv.FPVRenderer;
 import com.boruebork.nukemod.entity.custom.client.fpvint.FPVInterceptorRenderer;
@@ -14,6 +15,7 @@ import com.boruebork.nukemod.entity.custom.client.nuke.NukeEntityRenderer;
 import com.boruebork.nukemod.entity.custom.client.radar.basic_radar.BasicRadarRenderer;
 import com.boruebork.nukemod.entity.custom.client.rocket.RocketRenderer;
 import com.boruebork.nukemod.entity.custom.client.rocket_drone.RocketDroneRenderer;
+import com.boruebork.nukemod.entity.custom.uav.BayraktarTB2;
 import com.boruebork.nukemod.gui.ModMenuTypes;
 import com.boruebork.nukemod.gui.menu.EnricherScreen;
 import com.boruebork.nukemod.gui.menu.GuidedMissileLauncherScreen;
@@ -51,9 +53,6 @@ public class NukeModbyBorueborkClient {
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
-
-
-
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         // Some client setup code
@@ -104,6 +103,10 @@ public class NukeModbyBorueborkClient {
         event.registerEntityRenderer(
                 ModEntities.RQ4.get(),
                 RQ4Renderer::new
+        );
+        event.registerEntityRenderer(
+                ModEntities.BAYRAKTAR_TB2.get(),
+                BayraktarRenderer::new
         );
     }
 

@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.drone;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
+import com.boruebork.nukemod.aircraft.AbstractFixedWingAircraft;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.AbstractFPVProjectileLaunchingDrone;
 import com.boruebork.nukemod.network.packet.*;
@@ -99,16 +100,11 @@ public class ClientDroneManager {
                     PilotingClientState.cameraPitch,
                     PilotingClientState.cameraYaw
             ));
-        } else if (PilotingClientState.drone instanceof AbstractUAV uav) {
-            Sticks s = uav.computeClientSticks();
-            ClientPacketDistributor.sendToServer(new NewFixedWingPayload(
-                    uav.getId(),
-                    s.throttle(),
-                    s.pitch(),
-                    s.roll(),
-                    s.yaw(),
-                    uav.getYRot(),
-                    PilotingClientState.mode.getStreamCodec(),
+        } else if (PilotingClientState.drone instanceof AbstractFixedWingAircraft uav) {
+            Sticks s = uav.isClientAuthoritative() ? uav.lastPredicted() : Sticks.ZERO;
+            ClientPacketDistributor.sendToServer(new FixedWIngInputPayload(
+                    uav.getUUID(),
+                    s,
                     uav.tickCount
                     ));
 

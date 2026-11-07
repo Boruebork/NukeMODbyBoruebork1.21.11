@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.ooblib;
 
 import com.boruebork.nukemod.entity.ModEntities;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
@@ -37,7 +38,17 @@ public final class HitboxDefinitions {
             return List.of(
                     HitboxPart.of("body", 0,1,-2.4f,0.6f,0.6f,3,  new Vector3f(0,0,0)),
                     HitboxPart.of("left_wing", 2,1,-1.6f,1.38f,0.2f,0.5f,  new Vector3f(0,0,0)),
-                    HitboxPart.of("left_wing", -2,1,-1.6f,1.38f,0.2f,0.5f,  new Vector3f(0,0,0))
+                    HitboxPart.of("right_wing", -2,1,-1.6f,1.38f,0.2f,0.5f,  new Vector3f(0,0,0))
+            );
+        } else if (type == ModEntities.BAYRAKTAR_TB2.get()) {
+            return List.of(
+                    HitboxPart.of("body", 0,1,-1.3f,0.6f,0.6f,2.1f,  new Vector3f(0,0,0)),
+                    HitboxPart.withRotation("left_wing", 3.2f,1.5f,-2.2f,2.75f,0.075f,0.5f,  new Vector3f(0,0,0), 0, (float) Math.toRadians(2.5f), (float) Math.toRadians(3)),
+                    HitboxPart.withRotation("right_wing", -3.2f,1.5f,-2.2f,2.75f,0.075f,0.5f,  new Vector3f(0,0,0), 0, (float) Math.toRadians(-2.5f), (float) Math.toRadians(-3)),
+                    HitboxPart.withRotation("left_stick", 1.1f, 1.5f, -4f, 0.1f, 0.1f, 1.7f, new Vector3f(), (float) Math.toRadians(3), 0, 0),
+                    HitboxPart.withRotation("right_stick", -1.1f, 1.5f, -4f, 0.1f, 0.1f, 1.7f, new Vector3f(), (float) Math.toRadians(3), 0, 0),
+                    HitboxPart.withRotation("right_back_wing", -0.5f, 2.1f, -5.2f, 0.8f, 0.1f, 0.5f, new Vector3f(), (float) Math.toRadians(3), 0, (float) Math.toRadians(45)),
+                    HitboxPart.withRotation("left_back_wing", 0.5f, 2.1f, -5.2f, 0.8f, 0.1f, 0.5f, new Vector3f(), (float) Math.toRadians(3), 0, (float) Math.toRadians(-45))
             );
         }
         return PARTS.getOrDefault(type, List.of());

@@ -1,0 +1,12 @@
+{
+  "loader": "neoforge:obj",
+  "model": "nukemodbyboruebork:models/item/bayraktar_tb2.obj",
+  "mtl_override": "nukemodbyboruebork:models/item/bayraktar_tb2.mtl",
+  "textures": {
+    "texture0": "nukemodbyboruebork:item/bayraktar_tb2"
+  },
+  "automatic_culling": false,
+  "shade_quads": false,
+  "flip_v": true,
+  "emissive_ambient": false
+}

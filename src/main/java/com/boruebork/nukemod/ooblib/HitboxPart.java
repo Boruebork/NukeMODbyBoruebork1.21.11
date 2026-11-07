@@ -22,5 +22,8 @@ public record HitboxPart(
     public static HitboxPart of(String name, float ox, float oy, float oz, float hx, float hy, float hz, Vector3f pivot) {
         return new HitboxPart(name, new Vector3f(ox, oy, oz), new Vector3f(hx, hy, hz), new Quaternionf(), pivot);
     }
+    public static HitboxPart withRotation(String name, float ox, float oy, float oz, float hx, float hy, float hz, Vector3f pivot, float xRot, float yRot, float zRot) {
+        return new HitboxPart(name, new Vector3f(ox, oy, oz), new Vector3f(hx, hy, hz), new Quaternionf().rotateX(xRot).rotateY(yRot).rotateZ(zRot), pivot);
+    }
 }
 

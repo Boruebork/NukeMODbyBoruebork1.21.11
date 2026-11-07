@@ -5,7 +5,6 @@ import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.network.packet.ReconcilePayload;
 import com.boruebork.nukemod.ooblib.*;
-import com.boruebork.nukemod.uav.AbstractUAV;
 import com.boruebork.nukemod.uav.collision.TerrainCollider;
 import com.boruebork.nukemod.uav.flight.FlightModel;
 import com.boruebork.nukemod.uav.flight.FlightParams;
@@ -31,17 +30,12 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.List;
 
 import static com.boruebork.nukemod.ooblib.FixedWingUtil.*;
-import static com.boruebork.nukemod.ooblib.FixedWingUtil.AIR_DENSITY;
-import static com.boruebork.nukemod.ooblib.FixedWingUtil.DRAG_BASE;
-import static com.boruebork.nukemod.ooblib.FixedWingUtil.DRAG_INDUCED;
-import static com.boruebork.nukemod.ooblib.FixedWingUtil.LIFT_SLOPE;
-import static com.boruebork.nukemod.ooblib.FixedWingUtil.STALL_ANGLE;
 
 public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity implements HasHitboxParts {
     private final TerrainCollider terrain = new TerrainCollider(this);
@@ -53,7 +47,8 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         super(type, level);
         this.interpolation = new InterpolationHandler(this, 1);
     }
-
+    private Sticks lastPredicted = Sticks.ZERO;
+    public Sticks lastPredicted() { return lastPredicted; }
     // ---- what a concrete aircraft supplies ----
     protected abstract FlightParams flightParams();
     public abstract Sticks computeClientSticks();            // client: input devices -> sticks
@@ -64,11 +59,10 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
     protected Sticks serverSticks() { return isBeingPiloted() ? lastInput : Sticks.ZERO; }
 
     // ---- server input ----
-    public void onInput(Sticks s, int mode) {
+    public void onInput(Sticks s, int clientTick) {
         if (!Float.isFinite(s.throttle() + s.pitch() + s.roll() + s.yaw())) return;
         lastInput = new Sticks(Mth.clamp(s.throttle(), -1f, 1f), Mth.clamp(s.pitch(), -1f, 1f),
                 Mth.clamp(s.roll(), -1f, 1f), Mth.clamp(s.yaw(), -1f, 1f));
-        onModeReceived(mode);
     }
 
     @Override
@@ -131,7 +125,7 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         stepWith(s);
         ClientDroneManager.PilotingClientState.roll = roll;
         ClientDroneManager.PilotingClientState.rollO = rollO;
-        if (ClientDroneManager.PilotingClientState.mode != ClientDroneManager.PilotingClientState.PilotingMode.FIXED) history.clear();
+        if (!predictsLocally()) history.clear();
         history.addLast(new StateTick(tickCount, captureState(),
                 new InputTick(s)));
         while (history.size() > HISTORY_SIZE) history.removeFirst();
@@ -139,28 +133,24 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
     public void reconcileFromServer(ReconcilePayload p) {
         FlightState auth = new FlightState(new Vec3(p.motion().x(), p.motion().y(), p.motion().z()), new Vec3(p.motion().dx(), p.motion().dy(), p.motion().dz()),
                 p.attitude().yRot(), p.attitude().xRot(), p.attitude().roll(), p.throttle(), p.groundPitchRate(), p.onGround());
-        if (!predictsLocally()) {
-            applyState(auth);
-            history.clear(); return;
-        }
-        StateTick match = null;
-        for (StateTick h : history) if (h.tick() == p.inputTick()) { match = h; break; }
-        if (match == null) { applyState(auth); return; }
+        if (!predictsLocally()) { applyState(auth); history.clear(); return; }
 
-        double err = match.state().pos().distanceTo(auth.pos());
-        int behind = tickCount - p.inputTick();
-        if (err < RECONCILE_THRESHOLD || behind > MAX_REPLAY_TICKS) {
-            if (behind <= MAX_REPLAY_TICKS) setDeltaMovement(auth.vel()); else applyState(auth);
-            return;
+        while (!history.isEmpty() && history.peekFirst().tick() <= p.inputTick()) history.removeFirst();
+
+        if (history.size() > MAX_REPLAY_TICKS) {          // lag spike: too old to replay
+            applyState(auth); history.clear(); return;
         }
 
         FlightState s = auth;
+        ArrayDeque<StateTick> replayed = new ArrayDeque<>();
         for (StateTick h : history) {
-            if (h.tick() <= p.inputTick()) continue;
             s = FlightModel.step(s, h.input().sticks(), flightParams(), terrain::move).state();
+            replayed.addLast(new StateTick(h.tick(), s, h.input()));   // keep history consistent with the correction
         }
-        applyState(s);               // one setPos at the end instead of one per replayed tick
         history.clear();
+        history.addAll(replayed);
+
+        if (s.pos().distanceTo(position()) > RECONCILE_THRESHOLD) applyState(s);
     }
     // COLLISIONS
     protected boolean checkGroundCollision() {
@@ -212,11 +202,11 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         return new Quaternionf()
                 .rotateY((float) Math.toRadians(-this.getYRot(partialTick)))
                 .rotateX((float) Math.toRadians(this.getXRot(partialTick)))
-                .rotateZ((float) Math.toRadians(this.getRoll()));
+                .rotateZ((float) Math.toRadians(this.getRenderRoll(partialTick)));
     }
     @Override
-    protected @NonNull AABB makeBoundingBox(Vec3 pos) {
-        return computeOBBEnclosingAABB();
+    protected @Nullable AABB makeBoundingBox(Vec3 pos) {
+        return computeEnclosingAABB(pos);
     }
     public Vec3 getRenderPosition(float partialTick) {
         return new Vec3(
@@ -254,7 +244,7 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         if (!Float.isFinite(getYRot()))     setYRot(0f);
         if (!Float.isFinite(getXRot()))     setXRot(0f);
     }
-    private void resolveInitialPenetration() {
+    protected void resolveInitialPenetration() {
         double x = getX(), y = getY(), z = getZ();
         boolean stuck = hasTerrainCollisionAt(x, y, z);
         for (int i = 0; i < 32 && hasTerrainCollisionAt(x, y, z); i++) {
@@ -278,7 +268,7 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         return true;
     }
     public static final EntityDataAccessor<Float> HEALTH_DATA =
-            SynchedEntityData.defineId(AbstractUAV.class, EntityDataSerializers.FLOAT);
+            SynchedEntityData.defineId(AbstractFixedWingAircraft.class, EntityDataSerializers.FLOAT);
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);   // AbstractPilotedEntity's ROLL_DATA and CONTROLLER_DATA
@@ -338,44 +328,12 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
     @Override
     protected void addAdditionalSaveData(ValueOutput out) {
         super.addAdditionalSaveData(out);
-
-        //out.putString("PilotMode", this.serverMode.name());
         out.putFloat("Throttle", this.throttle);
-        //out.putDouble("PatrolAngle", this.patrolAngle);
-
-        /*if (this.serverPatrolCenter != null) {
-            out.store("PatrolCenter", BlockPos.CODEC, this.serverPatrolCenter);
-        }
-        if (this.serverPatrolEntityUuid != null) {
-            out.store("PatrolEntity", net.minecraft.core.UUIDUtil.CODEC, this.serverPatrolEntityUuid);
-        }*/
     }
     @Override
     protected void readAdditionalSaveData(ValueInput in) {
         super.readAdditionalSaveData(in);
-
-        //String modeStr = in.getStringOr("PilotMode", AbstractUAV.PilotMode.FIXED.name());
-        /*try {
-            this.serverMode = AbstractUAV.PilotMode.valueOf(modeStr);
-        } catch (IllegalArgumentException e) {
-            this.serverMode = AbstractUAV.PilotMode.FIXED;
-        }*/
-
         this.throttle  = in.getFloatOr("Throttle", 0f);
-        /*this.patrolAngle = in.getDoubleOr("PatrolAngle", 0.0);
 
-        this.serverPatrolCenter = null;
-        this.serverPatrolEntityUuid = null;
-
-        in.read("PatrolCenter", BlockPos.CODEC).ifPresent(pos -> this.serverPatrolCenter = pos);
-        in.read("PatrolEntity", net.minecraft.core.UUIDUtil.CODEC)
-                .ifPresent(uuid -> this.serverPatrolEntityUuid = uuid);
-
-        // Guard against PATROL with no target after load — don't idle silently.
-        if (this.serverMode == AbstractUAV.PilotMode.PATROL
-                && this.serverPatrolCenter == null
-                && this.serverPatrolEntityUuid == null) {
-            this.serverMode = AbstractUAV.PilotMode.FIXED;
-        }*/
     }
 }

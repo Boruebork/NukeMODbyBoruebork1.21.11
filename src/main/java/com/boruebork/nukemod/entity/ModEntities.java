@@ -8,6 +8,7 @@ import com.boruebork.nukemod.entity.custom.fpvdrones.GrenadeDrone;
 import com.boruebork.nukemod.entity.custom.fpvdrones.RocketDrone;
 import com.boruebork.nukemod.entity.custom.radar.BasicRadar;
 //import com.boruebork.nukemod.entity.custom.uav.AbstractUAV;
+import com.boruebork.nukemod.entity.custom.uav.BayraktarTB2;
 import com.boruebork.nukemod.entity.custom.uav.RQ4;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -36,6 +37,7 @@ public class ModEntities {
     public static ResourceKey<EntityType<?>> ROCKET_DRONE_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rocket_drone"));
     public static ResourceKey<EntityType<?>> BASIC_RADAR_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("basic_radar"));
     public static ResourceKey<EntityType<?>> RQ4_KEy = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("rq4"));
+    public static ResourceKey<EntityType<?>> BAYRAKTAR_KEY = ResourceKey.create(Registries.ENTITY_TYPE, Identifier.withDefaultNamespace("bayraktar_tb2"));
 
     public static final Supplier<EntityType<NukeEntity>> NUKE =
             ENTITY_TYPES.register("nuke", () -> EntityType.Builder.of(NukeEntity::new,
@@ -91,6 +93,11 @@ public class ModEntities {
                             MobCategory.MISC)
                     .sized(1f, 1).updateInterval(1)//.eyeHeight(1.0f)   // blocks at which the server keeps sending updates
                     .build(RQ4_KEy));
+    public static final Supplier<EntityType<BayraktarTB2>> BAYRAKTAR_TB2 =
+            ENTITY_TYPES.register("bayraktar_tb2", () -> EntityType.Builder.of(BayraktarTB2::new,
+                            MobCategory.MISC)
+                    .sized(1f, 1).updateInterval(1)//.eyeHeight(1.0f)   // blocks at which the server keeps sending updates
+                    .build(BAYRAKTAR_KEY));
 
 
 

@@ -9,17 +9,29 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.joml.Quaternionf;
 
 public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
     private RQ4Model model;
-
+    private static final ItemStack BODY = make("bayraktar_tb2");
+    ItemModelResolver itemModelResolver;
+    private static ItemStack make(String id) {
+        ItemStack s = new ItemStack(Items.STICK);
+        s.set(DataComponents.ITEM_MODEL, Identifier.fromNamespaceAndPath(NukeModbyBoruebork.MODID, id));
+        return s;
+    }
     public RQ4Renderer(EntityRendererProvider.Context context) {
         super(context);
+        this.itemModelResolver = context.getItemModelResolver();
         model = new RQ4Model(context.bakeLayer(RQ4Model.LAYER_LOCATION));
     }
 
@@ -32,8 +44,8 @@ public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
         poseStack.mulPose(Axis.YP.rotationDegrees(-renderState.yRot));
         poseStack.mulPose(Axis.XP.rotationDegrees(renderState.xRot));
         poseStack.mulPose(Axis.ZP.rotationDegrees(renderState.zRot));
-
-        // Body-space only: model origin → CG. Retune after this change.
+        /*renderState.body.submit(poseStack, nodeCollector, renderState.lightCoords,
+                OverlayTexture.NO_OVERLAY, renderState.outlineColor);   */     // Body-space only: model origin → CG. Retune after this change.
         poseStack.translate(0.0F, 2.0F, -1.2F);
 
         renderModel(this.model, renderState, poseStack, nodeCollector, cameraRenderState);
@@ -79,6 +91,9 @@ public class RQ4Renderer extends EntityRenderer<RQ4, RQ4RenderState> {
         reusedState.xRot = entity.getXRot(partialTick);
         reusedState.yRot = entity.getYRot(partialTick);
         reusedState.zRot = entity.getRenderRoll(partialTick);
+        this.itemModelResolver.updateForTopItem(
+                reusedState.body, BODY, ItemDisplayContext.NONE, entity.level(), entity, entity.getId());
+
         //System.err.println("zRot: " + entity.roll + "zRotO: " + entity.rollO);
         /*System.out.printf("xo=%.4f x=%.4f pt=%.3f  yo=%.4f y=%.4f%n",
                 entity.xo, entity.getX(), partialTick,
