@@ -22,10 +22,8 @@ import java.util.concurrent.atomic.DoubleAccumulator;
 /** -Dnukemod.netdebug=events (anomalies only) | trace (every tick). Writes <gamedir>/logs/netdebug-*.log */
 public final class NetDebug {
     private NetDebug() {}
-
-    private static final String MODE = System.getProperty("nukemod.netdebug", "off").toLowerCase(Locale.ROOT);
-    public static final boolean ON = !MODE.equals("off");
-    public static final boolean TRACE = MODE.equals("trace");
+    public static final boolean ON = true;       // set to false to turn all debugging off
+    public static final boolean TRACE = false;
 
     // ------------------------------------------------------------------ output
     private static final Object LOCK = new Object();

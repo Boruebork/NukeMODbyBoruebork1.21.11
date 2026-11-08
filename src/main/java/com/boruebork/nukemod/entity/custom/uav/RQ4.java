@@ -23,6 +23,11 @@ public class RQ4 extends AbstractWeaponEquipedUAV {
     }
 
     @Override
+    public float getYawRatePerTick() {
+        return 1.5f;
+    }
+
+    @Override
     protected float getMaxSpeed() {
         return 1.2f;
     }

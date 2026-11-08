@@ -1,6 +1,7 @@
 package com.boruebork.nukemod.aircraft;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
+import com.boruebork.nukemod.debug.NetDebug;
 import com.boruebork.nukemod.drone.AbstractPilotedEntity;
 import com.boruebork.nukemod.drone.ClientDroneManager;
 import com.boruebork.nukemod.network.packet.ReconcilePayload;
@@ -34,6 +35,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Locale;
 
 import static com.boruebork.nukemod.ooblib.FixedWingUtil.*;
 
@@ -47,32 +49,62 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         super(type, level);
         this.interpolation = new InterpolationHandler(this, 1);
     }
+    /// last predicted sticks on the client
     private Sticks lastPredicted = Sticks.ZERO;
+    /// a getter for lastPredicted
     public Sticks lastPredicted() { return lastPredicted; }
     // ---- what a concrete aircraft supplies ----
     protected abstract FlightParams flightParams();
+    /// how to work on raw inputs to turn them into deltas
     public abstract Sticks computeClientSticks();            // client: input devices -> sticks
 
     // ---- hooks with sensible defaults ----
+    /// theoretically should ackgnowledge the pilot or smth?
     protected boolean predictsLocally() { return true; }
     protected void onModeReceived(int mode) {}
+    /// get last input Sticks on the server
     protected Sticks serverSticks() { return isBeingPiloted() ? lastInput : Sticks.ZERO; }
 
     // ---- server input ----
+    /// we get input from the client!
     public void onInput(Sticks s, int clientTick) {
-        if (!Float.isFinite(s.throttle() + s.pitch() + s.roll() + s.yaw())) return;
+        /// if we were sent corrupt data, ignore it
+        if (!Float.isFinite(s.throttle())
+                || !Float.isFinite(s.pitch())
+                || !Float.isFinite(s.roll())
+                || !Float.isFinite(s.yaw())) {
+            return;
+        }
+        /// upd the lastInput value
         lastInput = new Sticks(Mth.clamp(s.throttle(), -1f, 1f), Mth.clamp(s.pitch(), -1f, 1f),
                 Mth.clamp(s.roll(), -1f, 1f), Mth.clamp(s.yaw(), -1f, 1f));
+        /// upd the last inputTick value
+        setLastInputTick(clientTick);
     }
+    /// last input tick which was actually worked on
+    private int lastSteppedAck = Integer.MIN_VALUE;
 
     @Override
     public void tick() {
         super.tick();
+        /// if we are on the server
         if (!level().isClientSide()) {
-            stepWith(serverSticks());
+            if (NetDebug.ON) NetDebug.serverPreTick(getId(), tickCount, captureState());
+            /// get server sticks which are the last input upd
+            Sticks in = serverSticks();
+            /// move
+            stepWith(in);
+            /// upd the last stepped value
+            lastSteppedAck = lastInputTick;
+            if (NetDebug.ON) {
+                if (!dbgServerHdr) { dbgServerHdr = true; NetDebug.note("S", "SESSION", describe()); }
+                NetDebug.serverStep(getId(), tickCount, lastInputTick, in, isBeingPiloted(), 0, captureState());
+            }
+            /// check collsions
             checkOBBCollisions();
             checkGroundCollision();
         }
+        /// sanitize state
         sanitizeState();
     }
 
@@ -82,34 +114,50 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
             return ClientDroneManager.PilotingClientState.drone == this && predictsLocally();
         return isBeingPiloted();
     }
+    /// capture the current FlightState
     private FlightState captureState() {
         return new FlightState(position(), getDeltaMovement(), getYRot(), getXRot(), roll,
                 throttle, groundPitchRate, onGround());
     }
     private void stepWith(Sticks in) {
+        /// capture current state
         FlightState before = captureState();
+        ///  move and cache some importatn stuff
         FlightModel.Result r = FlightModel.step(before, in, flightParams(), terrain::move);
+        /// like flightState
         FlightState s = r.state();
-
+        ///  upd old rotations
         xRotO = getXRot(); yRotO = getYRot(); rollO = roll;       // interpolation anchors
+        /// upd new rotations from move result
         setYRot(s.yaw()); setXRot(s.pitch()); this.roll = s.roll(); // rotation first: setPos rebuilds the bounding box from it
+        /// and throttle
         this.throttle = s.throttle();
+        /// and ground pitch rate
         this.groundPitchRate = s.groundPitchRate();
+        /// icheck if the collision is meaningful
         if (r.flagsValid()) {
+            /// update vertical/horizontal collision and onGround
             verticalCollision = r.vertical();
             horizontalCollision = r.horizontal();
             setOnGround(s.onGround());
         }
+        /// if position changed update it, why do even need this if?
         if (!s.pos().equals(before.pos())) setPos(s.pos().x, s.pos().y, s.pos().z);
+        /// set delta movement (speed)
         setDeltaMovement(s.vel());
+        /// if we are on the server update roll_data
         if (!level().isClientSide()) entityData.set(ROLL_DATA, roll);   // the old code set this on the client too
     }
     @Override
     protected void applyMovement(float fwd, float roll, boolean up, boolean down, float yaw, float pitch) {
+        /// is this client the pilot?
         boolean pilot = level().isClientSide() && ClientDroneManager.PilotingClientState.drone == this;
+        /// if we are on client which is not a pilot return
         if (level().isClientSide() && !pilot) return;
+        /// if we are on a server or piloting client MOVE
         stepWith(new Sticks(fwd, pitch, roll, yaw));
     }
+    /// Last S
     private int lastInputTick = -1;
     public void setLastInputTick(int t) { this.lastInputTick = t; }
     public int getLastInputTick()      { return this.lastInputTick; }
@@ -119,38 +167,113 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
     private static final int HISTORY_SIZE = 40;
     private static final double RECONCILE_THRESHOLD = 0.15;   // blocks
     private static final int MAX_REPLAY_TICKS = 8;
+    private boolean dbgClientHdr, dbgServerHdr;
+    /// bullshit
+    private String describe() {
+        AABB b = getBoundingBox();
+        return String.format(Locale.ROOT, "%s hitboxParts=%d bbox=%.2fx%.2fx%.2f params=%s",
+                getClass().getSimpleName(), getHitboxParts().size(), b.getXsize(), b.getYsize(), b.getZsize(), flightParams());
+    }
     @Override
     protected void onClientPrediction() {
-        Sticks s = computeClientSticks();                        // change its return type to Sticks, delete ClientSticks
+        /*if (NetDebug.ON) {
+            if (!dbgClientHdr) { dbgClientHdr = true; NetDebug.note("C", "SESSION", describe()); }
+            NetDebug.clientPreTick(getId(), tickCount, captureState());
+        }*/
+        /// get input
+        Sticks s = computeClientSticks();
+        /// upd the lastPredicted value
+        lastPredicted = s;
+        ///  mvoe on the client according to new input
         stepWith(s);
+        /// sync roll from `ClientDroneManager.PilotingClientState`
         ClientDroneManager.PilotingClientState.roll = roll;
         ClientDroneManager.PilotingClientState.rollO = rollO;
+        /// if we don't need to predict, clear history
         if (!predictsLocally()) history.clear();
+        /// add the new predicton to history
         history.addLast(new StateTick(tickCount, captureState(),
                 new InputTick(s)));
+        ///  if history is to large than delete first values
         while (history.size() > HISTORY_SIZE) history.removeFirst();
+        /// capture state after prediction
+        /*FlightState after = captureState();
+        /// didn't we already do that...?
+        history.addLast(new StateTick(tickCount, after, new InputTick(s)));
+        /// clean history again?
+        while (history.size() > HISTORY_SIZE) history.removeFirst();*/
+        if (NetDebug.ON) NetDebug.clientPostTick(getId(), tickCount, s, captureState());
     }
+    /// are to `FlightState`s close enough to be consifered identical?
+    private static boolean close(FlightState a, FlightState b, double posTol, double velTol) {
+        return a.pos().distanceToSqr(b.pos()) < posTol * posTol && a.vel().distanceToSqr(b.vel()) < velTol * velTol
+                && Math.abs(Mth.wrapDegrees(a.yaw() - b.yaw())) < 0.1f && Math.abs(a.pitch() - b.pitch()) < 0.1f
+                && Math.abs(a.roll() - b.roll()) < 0.1f && Math.abs(a.throttle() - b.throttle()) < 0.01f
+                && a.onGround() == b.onGround();
+    }
+
     public void reconcileFromServer(ReconcilePayload p) {
+        /// fling state from payload
         FlightState auth = new FlightState(new Vec3(p.motion().x(), p.motion().y(), p.motion().z()), new Vec3(p.motion().dx(), p.motion().dy(), p.motion().dz()),
                 p.attitude().yRot(), p.attitude().xRot(), p.attitude().roll(), p.throttle(), p.groundPitchRate(), p.onGround());
-        if (!predictsLocally()) { applyState(auth); history.clear(); return; }
-
-        while (!history.isEmpty() && history.peekFirst().tick() <= p.inputTick()) history.removeFirst();
-
-        if (history.size() > MAX_REPLAY_TICKS) {          // lag spike: too old to replay
-            applyState(auth); history.clear(); return;
+        /// the tick of the input data
+        int ack = p.inputTick();
+        /// if client doesn't predict then we clear all preidiction history and hardset from server
+        if (!predictsLocally()) {
+            applyState(auth);
+            history.clear();
+            //if (NetDebug.ON) NetDebug.clientExpect(getId(), captureState());
+            return;
+        }
+        /// create a StateTick match which represents the predicted State at the ack tick
+        StateTick match = null;
+        ///  Search for the match in history
+        for (StateTick h : history) if (h.tick() == ack) { match = h; break; }
+        //NetDebug.ClientRec pred = match == null ? null : new NetDebug.ClientRec(match.state(), match.input().sticks());
+        /// capture the state before reconciliiation
+        FlightState before = captureState();
+        /// clear all history before ack tick - we won't need it anymore
+        while (!history.isEmpty() && history.peekFirst().tick() <= ack) {
+            history.removeFirst();
         }
 
+        if (match != null && close(match.state(), auth, 0.02, 0.01)) {
+            //if (NetDebug.ON) NetDebug.clientReconcile(ack, tickCount, history.size(), pred, auth, null, before, NetDebug.Action.MATCHED);
+            return;
+        }
+        /// dont't replay to much or we will die
+        if (history.size() > MAX_REPLAY_TICKS) {
+            applyState(auth); history.clear();
+            /*if (NetDebug.ON) {
+                NetDebug.clientReconcile(ack, tickCount, 0, 0, auth, null, before, NetDebug.Action.HARD_SNAP_LAG);
+                NetDebug.clientExpect(getId(), captureState());
+            }*/
+            return;
+        }
+        /// copy of authourative flight state from server
         FlightState s = auth;
+        ///  a replay of the history
         ArrayDeque<StateTick> replayed = new ArrayDeque<>();
         for (StateTick h : history) {
+            /// replay the whole fcking movemnt????
             s = FlightModel.step(s, h.input().sticks(), flightParams(), terrain::move).state();
-            replayed.addLast(new StateTick(h.tick(), s, h.input()));   // keep history consistent with the correction
+            replayed.addLast(new StateTick(h.tick(), s, h.input()));
         }
+        /// clear old history and add replayed history
         history.clear();
         history.addAll(replayed);
+        /// replayed hisotry is replayed using the CORRECT server data
 
-        if (s.pos().distanceTo(position()) > RECONCILE_THRESHOLD) applyState(s);
+        /// is the new state too far way to from the before one to even care?
+        boolean apply = !close(s, before, RECONCILE_THRESHOLD, 0.05);
+        ///  if yes then apply server authorative one
+        if (apply) applyState(s);
+        /// else do nothing, cause who cares
+        /*if (NetDebug.ON) {
+            NetDebug.clientReconcile(ack, tickCount, history.size(), pred, auth, s, before,
+                    apply ? NetDebug.Action.REPLAY_APPLIED : NetDebug.Action.REPLAY_KEPT);
+            if (apply) NetDebug.clientExpect(getId(), captureState());
+        }*/
     }
     // COLLISIONS
     protected boolean checkGroundCollision() {

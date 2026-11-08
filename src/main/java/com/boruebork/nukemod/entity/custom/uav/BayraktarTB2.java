@@ -23,6 +23,11 @@ public class BayraktarTB2 extends AbstractUAV {
     }
 
     @Override
+    public float getYawRatePerTick() {
+        return 3f;
+    }
+
+    @Override
     protected float getMaxSpeed() {
         return 1.2f;
     }

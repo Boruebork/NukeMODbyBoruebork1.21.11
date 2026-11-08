@@ -34,9 +34,7 @@ public abstract class AbstractUAV extends AbstractFixedWingAircraft {
     // Force helpers
     // ---------------------------------------------------------------------
 
-    public float getYawRatePerTick() {
-        return 1.5f;
-    }
+    public abstract float getYawRatePerTick();
 
     public float getPitchRatePerTick() {
         return getMaxPitchRatePerTick();

@@ -20,7 +20,7 @@ public final class FlightModel {
             GROUND_PITCH_DAMPING = 0.80f, ELEVATOR_FULL_AUTHORITY_SPEED = 0.5f;
     private static final double CONTROL_FULL_SPEED = 0.3, BRAKE_DECEL = 0.02,
             TAIL_AREA_RATIO = 0.3, CN_BETA = 4.0, WORLD_LIMIT = 29_999_000;
-
+    /// main movement method
     public static Result step(FlightState s, Sticks in, FlightParams p, Mover mover) {
         // 1. throttle integrator
         float throttle = Mth.clamp(s.throttle() + in.throttle() * p.throttleRate(), 0f, 1f);
