@@ -1,4 +1,4 @@
-package com.boruebork.nukemod.aircraft;
+ package com.boruebork.nukemod.aircraft;
 
 import com.boruebork.nukemod.NukeModbyBoruebork;
 import com.boruebork.nukemod.debug.NetDebug;
@@ -100,7 +100,7 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
                 if (!dbgServerHdr) { dbgServerHdr = true; NetDebug.note("S", "SESSION", describe()); }
                 NetDebug.serverStep(getId(), tickCount, lastInputTick, in, isBeingPiloted(), 0, captureState());
             }
-            /// check collsions
+            /// check collisions
             checkOBBCollisions();
             checkGroundCollision();
         }
@@ -123,7 +123,7 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         /// capture current state
         FlightState before = captureState();
         ///  move and cache some importatn stuff
-        FlightModel.Result r = FlightModel.step(before, in, flightParams(), terrain::move);
+        FlightModel.Result r = FlightModel.step(before, in, flightParams(), terrain);
         /// like flightState
         FlightState s = r.state();
         ///  upd old rotations
@@ -255,8 +255,8 @@ public abstract class AbstractFixedWingAircraft extends AbstractPilotedEntity im
         ///  a replay of the history
         ArrayDeque<StateTick> replayed = new ArrayDeque<>();
         for (StateTick h : history) {
-            /// replay the whole fcking movemnt????
-            s = FlightModel.step(s, h.input().sticks(), flightParams(), terrain::move).state();
+            /// replay the whole fcking movemnt to cope with
+            s = FlightModel.step(s, h.input().sticks(), flightParams(), terrain).state();   // reconcile replay
             replayed.addLast(new StateTick(h.tick(), s, h.input()));
         }
         /// clear old history and add replayed history
